@@ -34,7 +34,16 @@ export default function Visits() {
   // Brand tabs: show only assigned brands for scoped admins
   const userBrands = user?.assignedBrands?.length ? user.assignedBrands : null
   const isSuperAdmin = user?.role === 'superadmin'
-  const availableBrands = (brands || []).filter((b) => isSuperAdmin || !userBrands ? true : b.key === 'all' || userBrands.includes(b.key))
+  const isOps = user?.role === 'ops'
+  const availableBrands = (brands || []).filter((b) => isSuperAdmin || isOps || !userBrands ? true : b.key === 'all' || userBrands.includes(b.key))
+
+  // Filter locations by admin's assigned brands
+  const allowedLocations = useMemo(() => {
+    const locs = locationDatabase ?? []
+    if (isSuperAdmin || isOps) return locs
+    if (!userBrands) return []
+    return locs.filter(loc => userBrands.includes(loc.brand))
+  }, [locationDatabase, userBrands, isSuperAdmin, isOps])
 
   const summary = {
     total: visits.length,
@@ -196,7 +205,7 @@ export default function Visits() {
             </div>
             <form onSubmit={handleCreateVisit} className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span className="font-semibold">الموقع</span>
-                <LocationPicker locations={locationDatabase ?? []} value={newVisit.officeName ? { name: newVisit.officeName, city: newVisit.city, brand: newVisit.type } : null} onChange={(loc) => { if (loc) setNewVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setNewVisit((p) => ({ ...p, officeName: '', city: '', type: '' })) }} placeholder="ابحث واختر الموقع..." />
+                <LocationPicker locations={allowedLocations} value={newVisit.officeName ? { name: newVisit.officeName, city: newVisit.city, brand: newVisit.type } : null} onChange={(loc) => { if (loc) setNewVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setNewVisit((p) => ({ ...p, officeName: '', city: '', type: '' })) }} placeholder="ابحث واختر الموقع..." />
               </div>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span><input value={newVisit.city} onChange={(e) => setNewVisit((p) => ({ ...p, city: e.target.value }))} className={inputClasses} placeholder="تُعبأ تلقائياً" /></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>
@@ -235,10 +244,17 @@ export default function Visits() {
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span className="font-semibold">الموقع</span>
-                <LocationPicker locations={locationDatabase ?? []} value={editingVisit.officeName ? { name: editingVisit.officeName, city: editingVisit.city, brand: editingVisit.type } : null} onChange={(loc) => { if (loc) setEditingVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setEditingVisit((p) => ({ ...p, officeName: '', city: '', type: '' })) }} placeholder="ابحث واختر الموقع..." />
+                <LocationPicker locations={allowedLocations} value={editingVisit.officeName ? { name: editingVisit.officeName, city: editingVisit.city, brand: editingVisit.type } : null} onChange={(loc) => { if (loc) setEditingVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setEditingVisit((p) => ({ ...p, officeName: '', city: '', type: '' })) }} placeholder="ابحث واختر الموقع..." />
               </div>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span><input value={editingVisit.city} onChange={(e) => setEditingVisit((p) => ({ ...p, city: e.target.value }))} className={inputClasses} /></label>
-              <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند / نوع التقييم</span><input value={editingVisit.type} onChange={(e) => setEditingVisit((p) => ({ ...p, type: e.target.value }))} className={inputClasses} /></label>
+              <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>
+                <select value={editingVisit.type} onChange={(e) => setEditingVisit((p) => ({ ...p, type: e.target.value }))} className={inputClasses}>
+                  <option value="">اختر البراند</option>
+                  {(brands || []).filter(b => b.key !== 'all').filter(b => !userBrands || userBrands.includes(b.key)).map((b) => (
+                    <option key={b.key} value={b.key}>{b.label}</option>
+                  ))}
+                </select>
+              </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>الحالة</span><select value={editingVisit.status} onChange={(e) => setEditingVisit((p) => ({ ...p, status: e.target.value }))} className={inputClasses}><option value="معلقة">زيارة جديدة</option><option value="قادمة">إعادة الزيارة</option><option value="جاري المسح">جاري المسح</option></select></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>التاريخ</span><input type="date" value={editingVisit.date} onChange={(e) => setEditingVisit((p) => ({ ...p, date: e.target.value }))} className={inputClasses} /></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>الفترة</span><select value={editingVisit.time} onChange={(e) => setEditingVisit((p) => ({ ...p, time: e.target.value }))} className={inputClasses}><option value="صباحية">صباحية</option><option value="مسائية">مسائية</option></select></label>

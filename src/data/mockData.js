@@ -4,17 +4,17 @@
 // ─── BRANDS ─────────────────────────────────────────────────────────────────
 export const BRANDS = [
   { key: 'all', label: 'جميع البراندات', color: '#a8c93a' },
-  { key: 'redbull', label: 'Redbull', color: '#dc2626' },
-  { key: 'mobily', label: 'Mobily', color: '#6d28d9' },
-  { key: 'stc', label: 'STC', color: '#4f46e5' },
-  { key: 'zain', label: 'Zain', color: '#059669' },
-  { key: 'virgin', label: 'Virgin', color: '#e11d48' },
-  { key: 'salam', label: 'Salam', color: '#0891b2' },
+  { key: 'موبايلي', label: 'موبايلي', color: '#6d28d9' },
+  { key: 'ريدبول', label: 'ريدبول', color: '#dc2626' },
+  { key: 'سلام موبايل', label: 'سلام موبايل', color: '#0891b2' },
+  { key: 'ليبارا', label: 'ليبارا', color: '#059669' },
+  { key: 'فيرجن MT', label: 'فيرجن MT', color: '#e11d48' },
+  { key: 'فيرجن DS', label: 'فيرجن DS', color: '#f97316' },
 ]
 
 // ─── DEMO CREDENTIALS ──────────────────────────────────────────────────────
 export const DEMO_CREDENTIALS = {
-  superadmin: { email: 'admin@chessboard.sa', password: 'demo2026', name: 'عبدالله المطيري' },
+  superadmin: { email: 'admin@chessboard.sa', password: 'demo2026', name: 'يوسف محمد' },
   admin: { email: 'manager@chessboard.sa', password: 'demo2026', name: 'سارة القحطاني' },
   ops: { email: 'ops@chessboard.sa', password: 'demo2026', name: 'فهد الدوسري' },
   shopper: { email: 'agent@chessboard.sa', password: 'demo2026', name: 'نورة العتيبي' },
@@ -24,14 +24,14 @@ export const DEMO_CREDENTIALS = {
 export const mockAdmins = [
   {
     id: 'sa-001',
-    name: 'خالد الشمري',
-    email: 'khalid@chessboard.sa',
-    personal_email: 'khalid.sh@gmail.com',
+    name: 'يوسف محمد',
+    email: 'admin@chessboard.sa',
+    personal_email: 'yusuf@gmail.com',
     password: 'demo2026',
     city: 'الرياض',
     status: 'active',
     role: 'superadmin',
-    assignedBrand: null, // sees all
+    assignedBrands: [], // empty = sees all
   },
   {
     id: 'admin-001',
@@ -42,18 +42,51 @@ export const mockAdmins = [
     city: 'جدة',
     status: 'active',
     role: 'admin',
-    assignedBrand: 'redbull',
+    assignedBrands: ['ريدبول', 'موبايلي'],
   },
   {
     id: 'admin-002',
     name: 'محمد الحربي',
-    email: 'mohammed@chessboard.sa',
+    email: 'mobily@chessboard.sa',
     personal_email: 'moh.h@gmail.com',
     password: 'demo2026',
     city: 'الدمام',
     status: 'active',
     role: 'admin',
-    assignedBrand: 'mobily',
+    assignedBrands: ['موبايلي'],
+  },
+  {
+    id: 'admin-003',
+    name: 'خالد الشمري',
+    email: 'salam@chessboard.sa',
+    personal_email: 'khalid.sh@gmail.com',
+    password: 'demo2026',
+    city: 'الرياض',
+    status: 'active',
+    role: 'admin',
+    assignedBrands: ['سلام موبايل'],
+  },
+  {
+    id: 'admin-004',
+    name: 'عبدالرحمن العمري',
+    email: 'lebara@chessboard.sa',
+    personal_email: 'abdulrahman@gmail.com',
+    password: 'demo2026',
+    city: 'جدة',
+    status: 'active',
+    role: 'admin',
+    assignedBrands: ['ليبارا'],
+  },
+  {
+    id: 'admin-005',
+    name: 'ريم السعيد',
+    email: 'virgin@chessboard.sa',
+    personal_email: 'reem.s@gmail.com',
+    password: 'demo2026',
+    city: 'الرياض',
+    status: 'active',
+    role: 'admin',
+    assignedBrands: ['فيرجن MT', 'فيرجن DS'],
   },
   {
     id: 'ops-001',
@@ -64,20 +97,10 @@ export const mockAdmins = [
     city: 'الرياض',
     status: 'active',
     role: 'ops',
-    assignedBrand: 'stc',
-  },
-  {
-    id: 'ops-002',
-    name: 'ريم السعيد',
-    email: 'reem@chessboard.sa',
-    personal_email: 'reem.s@gmail.com',
-    password: 'demo2026',
-    city: 'جدة',
-    status: 'active',
-    role: 'ops',
-    assignedBrand: 'zain',
+    assignedBrands: [], // ops sees all
   },
 ]
+
 
 // ─── SHOPPERS (Field Agents) ────────────────────────────────────────────────
 export const mockShoppers = [
@@ -234,292 +257,38 @@ export const mockEvaluationCriteria = [
   { key: 'bc_q3', label: 'سكريبت معتمد' },
 ]
 
-// ─── VISITS ─────────────────────────────────────────────────────────────────
-const today = new Date().toISOString().slice(0, 10)
-const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().slice(0, 10)
-const threeDaysAgo = new Date(Date.now() - 259200000).toISOString().slice(0, 10)
-const fourDaysAgo = new Date(Date.now() - 345600000).toISOString().slice(0, 10)
-const fiveDaysAgo = new Date(Date.now() - 432000000).toISOString().slice(0, 10)
+// ─── VISITS (auto-generated from 189 active Excel locations) ────────────────
+export { mockVisits } from './generatedVisits'
 
-export const mockVisits = [
-  // Completed visits with scores
-  {
-    id: 'v-001', office_name: 'كشك STC - الرياض بارك', city: 'الرياض', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'استفسار عن باقة بيانات جديدة مع مقارنة الأسعار',
-    membership_id: 'CB-10001', shopper_id: 'sh-001',
-    visit_date: `${twoDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 0, ss_q1: 1, ss_q2: 0, ss_q3: 0, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'أداء ممتاز في الترحيب. الموظف أظهر معرفة جيدة بالباقات لكن يحتاج تحسين في التعامل مع الاعتراضات.',
-    points_earned: 85, file_urls: [],
-  },
-  {
-    id: 'v-002', office_name: 'كشك موبايلي - النخيل مول', city: 'الرياض', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'شراء شريحة جديدة مع نقل رقم',
-    membership_id: 'CB-10002', shopper_id: 'sh-001',
-    visit_date: `${threeDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 0, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 1, ss_q2: 1, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 0 },
-    notes: 'الموظف لديه معرفة عميقة بالمنتجات. الاستقبال كان متأخراً قليلاً بسبب انشغاله بعميل آخر.',
-    points_earned: 90, file_urls: [],
-  },
-  {
-    id: 'v-003', office_name: 'كشك زين - رد سي مول', city: 'جدة', type: 'تقييم سري',
-    status: 'مكتملة', scenario: 'الاستفسار عن عروض الجوال مع الباقة',
-    membership_id: 'CB-10003', shopper_id: 'sh-002',
-    visit_date: `${fourDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 0, cm_q1: 1, cm_q2: 0, cm_q3: 1, pk_q1: 0, pk_q2: 1, pk_q3: 0, ss_q1: 1, ss_q2: 0, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'سرعة ممتازة في الخدمة. يحتاج تحسين في المعرفة بتفاصيل العروض الجديدة.',
-    points_earned: 70, file_urls: [],
-  },
-  {
-    id: 'v-004', office_name: 'كشك STC - مول العرب', city: 'جدة', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'تجديد اشتراك وترقية الباقة',
-    membership_id: 'CB-10004', shopper_id: 'sh-002',
-    visit_date: `${fiveDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 1, ss_q2: 1, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'أداء استثنائي. الموظف تعامل باحترافية عالية وأنهى المعاملة بسلاسة.',
-    points_earned: 110, file_urls: [],
-  },
-  {
-    id: 'v-005', office_name: 'كشك موبايلي - الظهران مول', city: 'الدمام', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'استفسار عن خدمات الإنترنت المنزلي',
-    membership_id: 'CB-10005', shopper_id: 'sh-003',
-    visit_date: `${twoDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 0, ss_q2: 1, ss_q3: 0, bc_q1: 0, bc_q2: 1, bc_q3: 1 },
-    notes: 'عرض المنتجات كان ممتازاً. نظافة الكشك تحتاج تحسين.',
-    points_earned: 80, file_urls: [],
-  },
-  {
-    id: 'v-006', office_name: 'كشك زين - النور مول', city: 'المدينة المنورة', type: 'تقييم سري',
-    status: 'مكتملة', scenario: 'شكوى من ضعف الشبكة',
-    membership_id: 'CB-10006', shopper_id: 'sh-006',
-    visit_date: `${threeDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 0, fi_q2: 0, fi_q3: 1, cm_q1: 0, cm_q2: 0, cm_q3: 1, pk_q1: 0, pk_q2: 0, pk_q3: 0, ss_q1: 0, ss_q2: 0, ss_q3: 0, bc_q1: 1, bc_q2: 1, bc_q3: 0 },
-    notes: 'التعامل مع الشكوى كان ضعيفاً. الموظف لم يُظهر تعاطفاً كافياً ولم يقدم حلولاً عملية.',
-    points_earned: 45, file_urls: [],
-  },
-  {
-    id: 'v-007', office_name: 'كشك STC - العثيم مول', city: 'الرياض', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'شراء جهاز جديد مع باقة',
-    membership_id: 'CB-10007', shopper_id: 'sh-004',
-    visit_date: `${fourDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 1, ss_q2: 1, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'أداء متميز في جميع المعايير. موظف مثالي يستحق التكريم.',
-    points_earned: 120, file_urls: [],
-  },
-  {
-    id: 'v-008', office_name: 'كشك موبايلي - الأندلس مول', city: 'جدة', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'إلغاء خدمة إضافية',
-    membership_id: 'CB-10008', shopper_id: 'sh-005',
-    visit_date: `${fiveDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 0, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 0, ss_q1: 1, ss_q2: 0, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'تم التعامل مع طلب الإلغاء بشكل مهني. محاولة جيدة للاحتفاظ بالعميل.',
-    points_earned: 75, file_urls: [],
-  },
-  // Upcoming/pending visits
-  {
-    id: 'v-009', office_name: 'كشك زين - الراشد مول', city: 'الخبر', type: 'تقييم شامل',
-    status: 'معلقة', scenario: 'تقييم معرفة الموظف بباقات الأعمال B2B',
-    membership_id: 'CB-10009', shopper_id: 'sh-003',
-    visit_date: `${today}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-010', office_name: 'كشك STC - الحكير مول', city: 'مكة المكرمة', type: 'تقييم سري',
-    status: 'معلقة', scenario: 'تقييم جودة الخدمة خلال أوقات الذروة',
-    membership_id: 'CB-10010', shopper_id: 'sh-005',
-    visit_date: `${today}T18:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-011', office_name: 'كشك موبايلي - تبوك بارك', city: 'تبوك', type: 'تقييم شامل',
-    status: 'معلقة', scenario: 'الاستفسار عن خدمة الفايبر المنزلي',
-    membership_id: 'CB-10011', shopper_id: 'sh-008',
-    visit_date: `${today}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-012', office_name: 'كشك زين - بانوراما مول', city: 'الرياض', type: 'تقييم سري',
-    status: 'معلقة', scenario: 'تقييم إجراءات التحقق من الهوية',
-    membership_id: 'CB-10012', shopper_id: 'sh-001',
-    visit_date: `${yesterday}T18:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-013', office_name: 'كشك STC - الرياض بارك', city: 'الرياض', type: 'تقييم شامل',
-    status: 'معلقة', scenario: 'استفسار عن عروض نهاية الشهر',
-    membership_id: 'CB-10013', shopper_id: 'sh-004',
-    visit_date: `${today}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-014', office_name: 'كشك موبايلي - النخيل مول', city: 'الرياض', type: 'تقييم سري',
-    status: 'قادمة', scenario: 'إعادة تقييم بعد ملاحظات سابقة حول الاستقبال',
-    membership_id: 'CB-10014', shopper_id: 'sh-001',
-    visit_date: `${yesterday}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-015', office_name: 'كشك زين - رد سي مول', city: 'جدة', type: 'تقييم شامل',
-    status: 'قادمة', scenario: 'متابعة نتائج التدريب على المنتجات الجديدة',
-    membership_id: 'CB-10015', shopper_id: 'sh-002',
-    visit_date: `${today}T18:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-016', office_name: 'كشك STC - مول العرب', city: 'جدة', type: 'تقييم سري',
-    status: 'قادمة', scenario: 'إعادة تقييم خدمة ما بعد البيع',
-    membership_id: 'CB-10016', shopper_id: 'sh-002',
-    visit_date: `${yesterday}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-017', office_name: 'كشك زين - النور مول', city: 'المدينة المنورة', type: 'تقييم شامل',
-    status: 'قادمة', scenario: 'إعادة تقييم بعد تغيير الموظف',
-    membership_id: 'CB-10017', shopper_id: 'sh-006',
-    visit_date: `${today}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  // Delete request
-  {
-    id: 'v-018', office_name: 'كشك موبايلي - الظهران مول', city: 'الدمام', type: 'تقييم شامل',
-    status: 'جاري المسح', scenario: 'تكرار زيارة - يرجى الحذف',
-    membership_id: 'CB-10018', shopper_id: null,
-    visit_date: `${fiveDaysAgo}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  // More completed for richer stats
-  {
-    id: 'v-019', office_name: 'كشك STC - العثيم مول', city: 'الرياض', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'تقييم عملية البيع الكاملة',
-    membership_id: 'CB-10019', shopper_id: 'sh-003',
-    visit_date: `${fiveDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 0, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 0, ss_q2: 1, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 0 },
-    notes: 'أداء جيد ومتسق عبر جميع المعايير.',
-    points_earned: 78, file_urls: [],
-  },
-  {
-    id: 'v-020', office_name: 'كشك موبايلي - الأندلس مول', city: 'جدة', type: 'تقييم سري',
-    status: 'مكتملة', scenario: 'تقييم ثقافة خدمة العملاء',
-    membership_id: 'CB-10020', shopper_id: 'sh-005',
-    visit_date: `${fourDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 0, pk_q2: 0, pk_q3: 1, ss_q1: 1, ss_q2: 0, ss_q3: 0, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'استقبال ممتاز. يحتاج تطوير في معرفة التفاصيل التقنية للباقات.',
-    points_earned: 72, file_urls: [],
-  },
-  {
-    id: 'v-021', office_name: 'كشك زين - الراشد مول', city: 'الخبر', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'تقييم التعامل مع عميل VIP',
-    membership_id: 'CB-10021', shopper_id: 'sh-003',
-    visit_date: `${threeDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 1, ss_q2: 1, ss_q3: 1, bc_q1: 1, bc_q2: 0, bc_q3: 1 },
-    notes: 'أداء لا يُضاهى — تعامل مع العميل بكل احترافية واهتمام.',
-    points_earned: 115, file_urls: [],
-  },
-  // Pending for agent sh-001
-  {
-    id: 'v-022', office_name: 'كشك STC - الرياض بارك', city: 'الرياض', type: 'تقييم شامل',
-    status: 'معلقة', scenario: 'تقييم إجراءات الصحة والسلامة في الكشك',
-    membership_id: 'CB-10022', shopper_id: 'sh-001',
-    visit_date: `${today}T10:00:00+03:00`,
-    scores: {}, notes: '', points_earned: 0, file_urls: [],
-  },
-  {
-    id: 'v-023', office_name: 'كشك STC - الحكير مول', city: 'مكة المكرمة', type: 'تقييم سري',
-    status: 'مكتملة', scenario: 'تقييم معرفة الموظف بعروض الحج والعمرة الخاصة',
-    membership_id: 'CB-10023', shopper_id: 'sh-005',
-    visit_date: `${twoDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 1, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 0, ss_q2: 1, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 1 },
-    notes: 'معرفة ممتازة بعروض الحج والعمرة. أداء مميز بشكل عام.',
-    points_earned: 95, file_urls: [],
-  },
-  {
-    id: 'v-024', office_name: 'كشك موبايلي - تبوك بارك', city: 'تبوك', type: 'تقييم شامل',
-    status: 'مكتملة', scenario: 'تقييم الأداء العام في منطقة نائية',
-    membership_id: 'CB-10024', shopper_id: 'sh-008',
-    visit_date: `${fourDaysAgo}T10:00:00+03:00`,
-    scores: { fi_q1: 0, fi_q2: 1, fi_q3: 0, cm_q1: 1, cm_q2: 0, cm_q3: 1, pk_q1: 0, pk_q2: 1, pk_q3: 0, ss_q1: 0, ss_q2: 0, ss_q3: 1, bc_q1: 1, bc_q2: 0, bc_q3: 0 },
-    notes: 'أداء متوسط. يحتاج الموظف تدريب إضافي خاصة في مهارات العرض.',
-    points_earned: 55, file_urls: [],
-  },
-  {
-    id: 'v-025', office_name: 'كشك زين - بانوراما مول', city: 'الرياض', type: 'تقييم سري',
-    status: 'مكتملة', scenario: 'تقييم سرعة الاستجابة في أوقات الذروة',
-    membership_id: 'CB-10025', shopper_id: 'sh-004',
-    visit_date: `${twoDaysAgo}T18:00:00+03:00`,
-    scores: { fi_q1: 1, fi_q2: 1, fi_q3: 1, cm_q1: 1, cm_q2: 1, cm_q3: 0, pk_q1: 1, pk_q2: 1, pk_q3: 1, ss_q1: 1, ss_q2: 0, ss_q3: 1, bc_q1: 1, bc_q2: 1, bc_q3: 0 },
-    notes: 'أداء جيد باستثناء سرعة الخدمة التي تأثرت بالازدحام الشديد.',
-    points_earned: 68, file_urls: [],
-  },
-]
 
 // ─── ISSUES ─────────────────────────────────────────────────────────────────
+const _d = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10)
+const _today = _d(0)
 export const mockIssues = [
-  { id: 'iss-001', visit_id: 'v-006', severity: 'خطيرة', description: 'تم رصد انخفاض في معيار الترحيب والاستقبال.', created_at: `${threeDaysAgo}T12:00:00+03:00` },
-  { id: 'iss-002', visit_id: 'v-006', severity: 'متوسطة', description: 'عدم تقديم حلول كافية عند التعامل مع الشكوى.', created_at: `${threeDaysAgo}T12:00:00+03:00` },
-  { id: 'iss-003', visit_id: 'v-003', severity: 'بسيطة', description: 'نقص في المعرفة بتفاصيل العروض الجديدة.', created_at: `${fourDaysAgo}T12:00:00+03:00` },
-  { id: 'iss-004', visit_id: 'v-005', severity: 'بسيطة', description: 'نظافة الكشك تحتاج تحسين.', created_at: `${twoDaysAgo}T12:00:00+03:00` },
-  { id: 'iss-005', visit_id: 'v-001', severity: 'بسيطة', description: 'يحتاج تحسين في التعامل مع الاعتراضات.', created_at: `${twoDaysAgo}T12:00:00+03:00` },
-  { id: 'iss-006', visit_id: 'v-024', severity: 'متوسطة', description: 'أداء متوسط في مهارات العرض والإقناع.', created_at: `${fourDaysAgo}T12:00:00+03:00` },
-  { id: 'iss-007', visit_id: 'v-025', severity: 'متوسطة', description: 'بطء في سرعة الخدمة خلال أوقات الذروة.', created_at: `${twoDaysAgo}T20:00:00+03:00` },
-  { id: 'iss-008', visit_id: 'v-020', severity: 'بسيطة', description: 'نقص في المعرفة بالتفاصيل التقنية للباقات.', created_at: `${fourDaysAgo}T12:00:00+03:00` },
+  { id: 'iss-001', visit_id: 'v-006', severity: 'خطيرة', description: 'تم رصد انخفاض في معيار الترحيب والاستقبال.', created_at: `${_d(3)}T12:00:00+03:00` },
+  { id: 'iss-002', visit_id: 'v-006', severity: 'متوسطة', description: 'عدم تقديم حلول كافية عند التعامل مع الشكوى.', created_at: `${_d(3)}T12:00:00+03:00` },
+  { id: 'iss-003', visit_id: 'v-003', severity: 'بسيطة', description: 'نقص في المعرفة بتفاصيل العروض الجديدة.', created_at: `${_d(4)}T12:00:00+03:00` },
+  { id: 'iss-004', visit_id: 'v-005', severity: 'بسيطة', description: 'نظافة الكشك تحتاج تحسين.', created_at: `${_d(2)}T12:00:00+03:00` },
+  { id: 'iss-005', visit_id: 'v-001', severity: 'بسيطة', description: 'يحتاج تحسين في التعامل مع الاعتراضات.', created_at: `${_d(2)}T12:00:00+03:00` },
+  { id: 'iss-006', visit_id: 'v-024', severity: 'متوسطة', description: 'أداء متوسط في مهارات العرض والإقناع.', created_at: `${_d(4)}T12:00:00+03:00` },
+  { id: 'iss-007', visit_id: 'v-025', severity: 'متوسطة', description: 'بطء في سرعة الخدمة خلال أوقات الذروة.', created_at: `${_d(2)}T20:00:00+03:00` },
+  { id: 'iss-008', visit_id: 'v-020', severity: 'بسيطة', description: 'نقص في المعرفة بالتفاصيل التقنية للباقات.', created_at: `${_d(4)}T12:00:00+03:00` },
 ]
 
-// ─── NOTIFICATIONS ──────────────────────────────────────────────────────────
+// ─── NOTIFICATIONS ──────────────────────────────────────────────────────
 export const mockNotifications = [
-  {
-    id: 'n-001', recipient_role: 'superadmin', recipient_user_id: null, recipient_email: '',
-    title: 'تم إكمال زيارة', description: 'تم إكمال الزيارة بنجاح (كشك STC - الرياض بارك - الرياض)',
-    event_type: 'visit_completed', visit_id: 'v-001', payload: {}, is_read: false, read_at: null,
-    created_at: `${twoDaysAgo}T12:00:00+03:00`,
-  },
-  {
-    id: 'n-002', recipient_role: 'superadmin', recipient_user_id: null, recipient_email: '',
-    title: 'تم إنشاء زيارة جديدة', description: 'تم إنشاء زيارة جديدة (كشك زين - الراشد مول - الخبر)',
-    event_type: 'visit_created', visit_id: 'v-009', payload: {}, is_read: true, read_at: `${today}T08:00:00+03:00`,
-    created_at: `${today}T07:00:00+03:00`,
-  },
-  {
-    id: 'n-003', recipient_role: 'admin', recipient_user_id: null, recipient_email: '',
-    title: 'تم إكمال زيارة', description: 'تم إكمال الزيارة بنجاح (كشك زين - رد سي مول - جدة)',
-    event_type: 'visit_completed', visit_id: 'v-003', payload: {}, is_read: false, read_at: null,
-    created_at: `${fourDaysAgo}T13:00:00+03:00`,
-  },
-  {
-    id: 'n-004', recipient_role: 'shopper', recipient_user_id: 'sh-001', recipient_email: '',
-    title: 'تم إسناد زيارة جديدة لك', description: 'يرجى مراجعة بيانات الزيارة (كشك زين - بانوراما مول - الرياض)',
-    event_type: 'visit_assigned', visit_id: 'v-012', payload: {}, is_read: false, read_at: null,
-    created_at: `${yesterday}T09:00:00+03:00`,
-  },
-  {
-    id: 'n-005', recipient_role: 'ops', recipient_user_id: null, recipient_email: '',
-    title: 'طلب حذف زيارة', description: 'تم إرسال طلب حذف زيارة من فريق العمليات (كشك موبايلي - الظهران مول - الدمام)',
-    event_type: 'visit_delete_requested', visit_id: 'v-018', payload: {}, is_read: false, read_at: null,
-    created_at: `${fiveDaysAgo}T11:00:00+03:00`,
-  },
-  {
-    id: 'n-006', recipient_role: 'shopper', recipient_user_id: 'sh-001', recipient_email: '',
-    title: 'تم إسناد زيارة جديدة لك', description: 'يرجى مراجعة بيانات الزيارة (كشك STC - الرياض بارك)',
-    event_type: 'visit_assigned', visit_id: 'v-022', payload: {}, is_read: false, read_at: null,
-    created_at: `${today}T08:30:00+03:00`,
-  },
-  {
-    id: 'n-007', recipient_role: 'superadmin', recipient_user_id: null, recipient_email: '',
-    title: 'تم إكمال زيارة', description: 'أداء استثنائي في كشك STC - العثيم مول',
-    event_type: 'visit_completed', visit_id: 'v-007', payload: {}, is_read: false, read_at: null,
-    created_at: `${fourDaysAgo}T20:00:00+03:00`,
-  },
+  { id: 'n-001', recipient_role: 'superadmin', recipient_user_id: null, recipient_email: '', title: 'تم إكمال زيارة', description: 'تم إكمال الزيارة بنجاح', event_type: 'visit_completed', visit_id: 'v-001', payload: {}, is_read: false, read_at: null, created_at: `${_d(2)}T12:00:00+03:00` },
+  { id: 'n-002', recipient_role: 'admin', recipient_user_id: null, recipient_email: '', title: 'تم إكمال زيارة', description: 'تم إكمال الزيارة بنجاح', event_type: 'visit_completed', visit_id: 'v-003', payload: {}, is_read: false, read_at: null, created_at: `${_d(4)}T13:00:00+03:00` },
+  { id: 'n-003', recipient_role: 'shopper', recipient_user_id: 'sh-001', recipient_email: '', title: 'تم إسناد زيارة جديدة لك', description: 'يرجى مراجعة بيانات الزيارة', event_type: 'visit_assigned', visit_id: 'v-012', payload: {}, is_read: false, read_at: null, created_at: `${_d(1)}T09:00:00+03:00` },
 ]
 
-// ─── POINTS RULES ───────────────────────────────────────────────────────────
+// ─── POINTS RULES ───────────────────────────────────────────────────────
 export const mockPointsRules = [
   { category: 'visits', condition: 'إكمال زيارة', points: 50 },
   { category: 'issues', condition: 'بسيطة', points: 15 },
   { category: 'issues', condition: 'متوسطة', points: 30 },
   { category: 'issues', condition: 'خطيرة', points: 50 },
   { category: 'quality', condition: 'تقرير شامل', points: 25 },
-  { category: 'quality', condition: 'سرعة الإنجاز', points: 15 },
-  { category: 'quality', condition: 'دقة المعلومات', points: 20 },
   { category: 'achievements', condition: 'إنجاز 5 زيارات', points: 50 },
   { category: 'achievements', condition: 'إنجاز 10 زيارات', points: 100 },
   { category: 'achievements', condition: 'إنجاز 20 زيارات', points: 200 },

@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/DataState
 
 export default function ManageAdmins() {
   const {
-    superAdmins, opsAdmins, subAdmins,
+    superAdmins, opsAdmins, subAdmins, brands,
     canManageSuperAdmins, canManageOpsAdmins,
     addSuperAdmin, updateSuperAdmin, deleteSuperAdmin,
     addOpsAdmin, updateOpsAdmin, deleteOpsAdmin,
@@ -14,10 +14,19 @@ export default function ManageAdmins() {
     dataLoading, dataError,
   } = useOutletContext()
 
+  const brandOptions = (brands || []).filter(b => b.key !== 'all')
+
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [addRole, setAddRole] = useState('admin')
   const [editing, setEditing] = useState(null)
-  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', city: '', status: 'نشط' })
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', city: '', status: 'نشط', assignedBrands: [] })
+
+  const toggleBrand = (brandKey, setter) => {
+    setter((prev) => {
+      const current = prev.assignedBrands || []
+      return { ...prev, assignedBrands: current.includes(brandKey) ? current.filter(b => b !== brandKey) : [...current, brandKey] }
+    })
+  }
 
   if (dataLoading) return <LoadingState />
   if (dataError) return <ErrorState message={dataError} />
@@ -30,7 +39,7 @@ export default function ManageAdmins() {
     if (addRole === 'superadmin') await addSuperAdmin(payload)
     else if (addRole === 'ops') await addOpsAdmin(payload)
     else await addSubAdmin(payload)
-    setNewAdmin({ name: '', email: '', password: '', city: '', status: 'نشط' })
+    setNewAdmin({ name: '', email: '', password: '', city: '', status: 'نشط', assignedBrands: [] })
     setIsAddOpen(false)
   }
 
@@ -74,6 +83,22 @@ export default function ManageAdmins() {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-cb-gray-900 truncate">{a.name}</p>
                 <p className="text-xs text-cb-gray-500">{a.email} • {a.city}</p>
+                {a.assignedBrands?.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {a.assignedBrands.map((bk) => {
+                      const br = brandOptions.find(b => b.key === bk)
+                      return br ? (
+                        <span key={bk} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-cb-gray-100 text-cb-gray-700">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: br.color }} />
+                          {br.label}
+                        </span>
+                      ) : null
+                    })}
+                  </div>
+                )}
+                {(!a.assignedBrands || a.assignedBrands.length === 0) && role !== 'superadmin' && (
+                  <p className="mt-0.5 text-[10px] text-cb-gray-400">جميع البراندات</p>
+                )}
               </div>
               <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${roleColor(role)}`}>{roleLabel(role)}</span>
               {canManage && (
@@ -117,6 +142,25 @@ export default function ManageAdmins() {
               <label className="space-y-1 text-sm text-cb-gray-600"><span>البريد</span><input type="email" required value={newAdmin.email} onChange={(e) => setNewAdmin((p) => ({ ...p, email: e.target.value }))} className={inputClasses} /></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>كلمة المرور</span><input required value={newAdmin.password} onChange={(e) => setNewAdmin((p) => ({ ...p, password: e.target.value }))} className={inputClasses} /></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span><input value={newAdmin.city} onChange={(e) => setNewAdmin((p) => ({ ...p, city: e.target.value }))} className={inputClasses} /></label>
+              {addRole !== 'superadmin' && (
+                <div className="space-y-2 text-sm text-cb-gray-600">
+                  <span className="font-semibold">البراندات المخصصة</span>
+                  <p className="text-xs text-cb-gray-400">اترك فارغاً لعرض جميع البراندات</p>
+                  <div className="flex flex-wrap gap-2">
+                    {brandOptions.map((b) => (
+                      <button key={b.key} type="button" onClick={() => toggleBrand(b.key, setNewAdmin)}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition ${
+                          newAdmin.assignedBrands.includes(b.key)
+                            ? 'border-cb-lime bg-cb-lime/10 text-cb-gray-900'
+                            : 'border-cb-gray-300 text-cb-gray-500 hover:border-cb-gray-400'
+                        }`}>
+                        <span className="h-2 w-2 rounded-full" style={{ background: b.color }} />
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button type="submit" className="h-11 rounded-xl bg-cb-lime text-sm font-bold text-white transition hover:bg-cb-lime-dark">حفظ</button>
             </form>
           </div>
@@ -139,6 +183,25 @@ export default function ManageAdmins() {
                   <option value="نشط">نشط</option><option value="غير نشط">غير نشط</option>
                 </select>
               </label>
+              {editing.role !== 'superadmin' && (
+                <div className="space-y-2 text-sm text-cb-gray-600">
+                  <span className="font-semibold">البراندات المخصصة</span>
+                  <p className="text-xs text-cb-gray-400">اترك فارغاً لعرض جميع البراندات</p>
+                  <div className="flex flex-wrap gap-2">
+                    {brandOptions.map((b) => (
+                      <button key={b.key} type="button" onClick={() => toggleBrand(b.key, setEditing)}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold border transition ${
+                          (editing.assignedBrands || []).includes(b.key)
+                            ? 'border-cb-lime bg-cb-lime/10 text-cb-gray-900'
+                            : 'border-cb-gray-300 text-cb-gray-500 hover:border-cb-gray-400'
+                        }`}>
+                        <span className="h-2 w-2 rounded-full" style={{ background: b.color }} />
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button type="button" onClick={handleSaveEdit} className="h-11 rounded-xl bg-cb-lime text-sm font-bold text-white transition hover:bg-cb-lime-dark">حفظ التعديلات</button>
             </div>
           </div>

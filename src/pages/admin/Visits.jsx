@@ -31,21 +31,9 @@ export default function Visits() {
   const canAssignShopper = user?.role === 'superadmin' || user?.role === 'ops'
   const canDeleteVisit = user?.role === 'superadmin' || user?.role === 'ops'
 
-  // Derive brand from office name
-  const deriveBrand = (officeName = '') => {
-    const n = officeName.toLowerCase()
-    if (n.includes('stc')) return 'stc'
-    if (n.includes('موبايلي') || n.includes('mobily')) return 'mobily'
-    if (n.includes('زين') || n.includes('zain')) return 'zain'
-    if (n.includes('redbull') || n.includes('ريدبول')) return 'redbull'
-    if (n.includes('virgin') || n.includes('فيرجن')) return 'virgin'
-    if (n.includes('salam') || n.includes('سلام')) return 'salam'
-    return 'other'
-  }
-
-  // Admin brand scoping: if admin has assignedBrand, only show that brand
-  const userBrand = user?.assignedBrand || null
-  const availableBrands = (brands || []).filter((b) => !userBrand || b.key === 'all' || b.key === userBrand)
+  // Admin brand scoping: if admin has assignedBrands, only show those brands
+  const userBrands = user?.assignedBrands?.length ? user.assignedBrands : null
+  const availableBrands = (brands || []).filter((b) => !userBrands || b.key === 'all' || userBrands.includes(b.key))
 
   const summary = {
     total: visits.length,
@@ -59,17 +47,16 @@ export default function Visits() {
     return visits.filter((v) => {
       const matchFilter = activeFilter === 'الكل' || v.status === activeFilter
       const matchQuery = `${v.officeName} ${v.city}`.toLowerCase().includes(debouncedQuery.toLowerCase())
-      const visitBrand = deriveBrand(v.officeName)
-      const matchBrand = activeBrand === 'all' || visitBrand === activeBrand
-      // If admin has assigned brand, enforce it
-      const matchScope = !userBrand || visitBrand === userBrand
+      const vBrand = v.brand || v.type || ''
+      const matchBrand = activeBrand === 'all' || vBrand === activeBrand
+      const matchScope = !userBrands || userBrands.includes(vBrand)
       return matchFilter && matchQuery && matchBrand && matchScope
     })
-  }, [activeFilter, activeBrand, debouncedQuery, visits, userBrand])
+  }, [activeFilter, activeBrand, debouncedQuery, visits, userBrands])
 
   const handleCreateVisit = async (e) => {
     e.preventDefault()
-    await addVisit({ ...newVisit, assignedShopperId: canAssignShopper ? newVisit.assignedShopperId || null : null })
+    await addVisit({ ...newVisit, brand: newVisit.type, assignedShopperId: canAssignShopper ? newVisit.assignedShopperId || null : null })
     setNewVisit(getInitialVisit())
     setIsAddModalOpen(false)
   }
@@ -134,7 +121,7 @@ export default function Visits() {
                 <span className="ms-1 rounded-full bg-cb-gray-200 px-2 py-0.5 text-[10px] font-black text-cb-gray-700">
                   {b.key === 'all'
                     ? visits.length
-                    : visits.filter((v) => deriveBrand(v.officeName) === b.key).length}
+                    : visits.filter((v) => (v.brand || v.type) === b.key).length}
                 </span>
               )}
             </button>
@@ -211,7 +198,14 @@ export default function Visits() {
                 <LocationPicker locations={locationDatabase ?? []} value={newVisit.officeName ? { name: newVisit.officeName, city: newVisit.city, brand: newVisit.type } : null} onChange={(loc) => { if (loc) setNewVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setNewVisit((p) => ({ ...p, officeName: '', city: '', type: '' })) }} placeholder="ابحث واختر الموقع..." />
               </div>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span><input value={newVisit.city} onChange={(e) => setNewVisit((p) => ({ ...p, city: e.target.value }))} className={inputClasses} placeholder="تُعبأ تلقائياً" /></label>
-              <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند / نوع التقييم</span><input value={newVisit.type} onChange={(e) => setNewVisit((p) => ({ ...p, type: e.target.value }))} className={inputClasses} /></label>
+              <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>
+                <select value={newVisit.type} onChange={(e) => setNewVisit((p) => ({ ...p, type: e.target.value }))} className={inputClasses}>
+                  <option value="">اختر البراند</option>
+                  {(brands || []).filter(b => b.key !== 'all').filter(b => !userBrands || userBrands.includes(b.key)).map((b) => (
+                    <option key={b.key} value={b.key}>{b.label}</option>
+                  ))}
+                </select>
+              </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>الحالة</span><select value={newVisit.status} onChange={(e) => setNewVisit((p) => ({ ...p, status: e.target.value }))} className={inputClasses}><option value="معلقة">زيارة جديدة</option><option value="قادمة">إعادة الزيارة</option></select></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>التاريخ</span><input type="date" value={newVisit.date} onChange={(e) => setNewVisit((p) => ({ ...p, date: e.target.value }))} className={inputClasses} /></label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>الفترة</span><select value={newVisit.time} onChange={(e) => setNewVisit((p) => ({ ...p, time: e.target.value }))} className={inputClasses}><option value="صباحية">صباحية</option><option value="مسائية">مسائية</option></select></label>

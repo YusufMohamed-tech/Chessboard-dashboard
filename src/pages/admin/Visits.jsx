@@ -46,8 +46,13 @@ export default function Visits() {
   }, [locationDatabase, userBrands, isSuperAdmin, isOps])
 
   const availableCities = useMemo(() => {
-    const cities = new Set(allowedLocations.map(loc => loc.city).filter(Boolean))
-    return Array.from(cities).sort()
+    const counts = new Map()
+    allowedLocations.forEach(loc => {
+      if (loc.city) counts.set(loc.city, (counts.get(loc.city) || 0) + 1)
+    })
+    return Array.from(counts.entries())
+      .map(([city, count]) => ({ city, count }))
+      .sort((a, b) => a.city.localeCompare(b.city))
   }, [allowedLocations])
 
   const filteredAddLocations = useMemo(() => {
@@ -227,7 +232,7 @@ export default function Visits() {
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span>
                 <select value={newVisit.city} onChange={(e) => setNewVisit((p) => ({ ...p, city: e.target.value, officeName: '' }))} className={inputClasses}>
                   <option value="">جميع المدن</option>
-                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                  {availableCities.map(c => <option key={c.city} value={c.city}>{c.city} ({c.count})</option>)}
                 </select>
               </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>
@@ -271,7 +276,7 @@ export default function Visits() {
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span>
                 <select value={editingVisit.city} onChange={(e) => setEditingVisit((p) => ({ ...p, city: e.target.value, officeName: '' }))} className={inputClasses}>
                   <option value="">جميع المدن</option>
-                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                  {availableCities.map(c => <option key={c.city} value={c.city}>{c.city} ({c.count})</option>)}
                 </select>
               </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>

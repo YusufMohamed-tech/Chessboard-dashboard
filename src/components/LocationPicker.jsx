@@ -103,11 +103,13 @@ export default function LocationPicker({ locations = [], value, onChange, placeh
             ) : (
               Array.from(grouped.entries()).map(([city, items]) => (
                 <div key={city}>
-                  <div className="sticky top-0 z-10 bg-cb-gray-50 border-b border-cb-gray-100 px-3 py-1.5 text-xs font-black text-cb-gray-600 flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 text-cb-lime" />
-                    {city}
-                    <span className="text-cb-gray-400 font-semibold">({items.length})</span>
-                  </div>
+                  {grouped.size > 1 && (
+                    <div className="sticky top-0 z-10 bg-cb-gray-50 border-b border-cb-gray-100 px-3 py-1.5 text-xs font-black text-cb-gray-600 flex items-center gap-1.5">
+                      <MapPin className="h-3 w-3 text-cb-lime" />
+                      {city}
+                      <span className="text-cb-gray-400 font-semibold">({items.length})</span>
+                    </div>
+                  )}
                   {items.map((loc, i) => (
                     <button
                       key={`${loc.name}-${loc.brand}-${i}`}

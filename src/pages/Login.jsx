@@ -55,10 +55,14 @@ export default function Login({ onLogin }) {
   }
 
   const demoAccounts = [
-    { role: 'سوبر أدمن', email: 'admin@chessboard.sa', password: 'demo2026' },
-    { role: 'مدير', email: 'manager@chessboard.sa', password: 'demo2026' },
-    { role: 'عمليات', email: 'ops@chessboard.sa', password: 'demo2026' },
-    { role: 'وكيل ميداني', email: 'agent@chessboard.sa', password: 'demo2026' },
+    { role: 'سوبر أدمن', email: 'admin@chessboard.sa', password: 'demo2026', brand: '' },
+    { role: 'مدير - ريدبول + موبايلي', email: 'manager@chessboard.sa', password: 'demo2026', brand: '🔴🟣' },
+    { role: 'مدير - موبايلي', email: 'mobily@chessboard.sa', password: 'demo2026', brand: '🟣' },
+    { role: 'مدير - سلام موبايل', email: 'salam@chessboard.sa', password: 'demo2026', brand: '🔵' },
+    { role: 'مدير - ليبارا', email: 'lebara@chessboard.sa', password: 'demo2026', brand: '🟢' },
+    { role: 'مدير - فيرجن', email: 'virgin@chessboard.sa', password: 'demo2026', brand: '🔴' },
+    { role: 'عمليات', email: 'ops@chessboard.sa', password: 'demo2026', brand: '' },
+    { role: 'وكيل ميداني', email: 'agent@chessboard.sa', password: 'demo2026', brand: '' },
   ]
 
   return (

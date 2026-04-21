@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useState, useCallback } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { calculateWeightedScore } from './utils/scoring'
+import { calculateWeightedScore, ALL_QUESTION_KEYS, calculatePercentage } from './utils/scoring'
 import {
   DEMO_CREDENTIALS,
   mockAdmins,
@@ -186,15 +186,22 @@ function mapPointsRules(rows) {
   return next
 }
 
-function makeEmptyScores(criteria) {
-  return criteria.reduce((acc, c) => { acc[c.key] = 0; return acc }, {})
+function makeEmptyScores() {
+  const obj = {}
+  ALL_QUESTION_KEYS.forEach((k) => { obj[k] = 0 })
+  return obj
 }
 
-function getGeneratedIssues(scores, criteria) {
-  const weak = criteria.filter((c) => Number(scores[c.key] ?? 0) <= 2)
-  if (weak.length === 0) return []
-  const severity = weak.length >= 3 ? 'خطيرة' : weak.length === 2 ? 'متوسطة' : 'بسيطة'
-  return [{ severity, description: `تم رصد انخفاض في معيار ${weak[0].label}.` }]
+function getGeneratedIssues(scores) {
+  const pct = calculatePercentage(scores)
+  if (pct >= 80) return []
+  const severity = pct < 40 ? 'خطيرة' : pct < 60 ? 'متوسطة' : 'بسيطة'
+  // Find which categories have weak scores
+  const weakKeys = ALL_QUESTION_KEYS.filter((k) => Number(scores[k]) === 0)
+  const desc = weakKeys.length > 0
+    ? `تم رصد ${weakKeys.length} نقطة ضعف (${pct}% فقط).`
+    : `النتيجة العامة ${pct}% تحتاج تحسين.`
+  return [{ severity, description: desc }]
 }
 
 function isRootSuperAdmin(user) {
@@ -446,8 +453,8 @@ function App() {
     if (!target) return null
 
     const finalScore = calculateWeightedScore(payload.scores)
-    const generatedIssues = getGeneratedIssues(payload.scores, evaluationCriteria)
-    const pointsEarned = Math.round(finalScore * 20 + generatedIssues.length * 10)
+    const generatedIssues = getGeneratedIssues(payload.scores)
+    const pointsEarned = Math.round(calculatePercentage(payload.scores) * 1.2 + generatedIssues.length * 10)
 
     setVisits((prev) => prev.map((v) => v.id !== visitId ? v : {
       ...v, status: 'مكتملة', scores: payload.scores, notes: payload.notes, pointsEarned,

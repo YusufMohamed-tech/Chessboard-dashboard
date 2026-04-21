@@ -1,0 +1,93 @@
+import { Activity, BarChart3, BellRing, LayoutDashboard, ScanSearch, ShieldCheck, Users } from 'lucide-react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import Footer from '../../components/Footer'
+import Navbar from '../../components/Navbar'
+
+const SHOW_POINTS_SECTION = true
+
+const superAdminTabs = [
+  { label: 'نظرة عامة', to: '/superadmin/overview', icon: LayoutDashboard },
+  { label: 'إدارة المديرين', to: '/superadmin/managers', icon: ShieldCheck },
+  { label: 'الوكلاء الميدانيون', to: '/superadmin/shoppers', icon: Users },
+  { label: 'الزيارات', to: '/superadmin/visits', icon: ScanSearch },
+  { label: 'الإشعارات', to: '/superadmin/notifications', icon: BellRing },
+  { label: 'التقارير', to: '/superadmin/reports', icon: BarChart3 },
+]
+
+if (SHOW_POINTS_SECTION) {
+  superAdminTabs.push({ label: 'النقاط', to: '/superadmin/points', icon: Activity })
+}
+
+function getTitle(pathname) {
+  if (pathname.includes('/superadmin/managers')) return 'إدارة المديرين'
+  if (pathname.includes('/superadmin/shoppers')) return 'إدارة الوكلاء الميدانيين'
+  if (pathname.includes('/superadmin/visits')) return 'إدارة الزيارات'
+  if (pathname.includes('/superadmin/notifications')) return 'مركز الإشعارات'
+  if (pathname.includes('/superadmin/reports')) return 'التقارير والإحصائيات'
+  if (pathname.includes('/superadmin/points')) return 'إدارة النقاط'
+  return 'لوحة تحكم سوبر أدمن'
+}
+
+export default function SuperAdminLayout(props) {
+  const location = useLocation()
+  const unreadNotificationsCount = Number(props.unreadNotificationsCount ?? 0)
+
+  const tabs = superAdminTabs.map((tab) => {
+    if (tab.to !== '/superadmin/notifications') return tab
+    return { ...tab, badge: unreadNotificationsCount }
+  })
+
+  const contextValue = {
+    ...props,
+    getShopperById: (shopperId) => props.shoppers.find((s) => s.id === shopperId),
+  }
+
+  return (
+    <div className="min-h-screen bg-cb-gray-50 py-4 md:py-6">
+      <div className="mx-auto max-w-7xl px-4">
+        <Navbar
+          title={getTitle(location.pathname)}
+          user={props.user}
+          onLogout={props.onLogout}
+          showLiveIndicator={props.isLive}
+        />
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
+          <aside className="h-fit rounded-2xl border border-cb-gray-200 bg-white p-3 shadow-sm">
+            <h3 className="mb-2 px-2 text-sm font-black text-cb-gray-700">أقسام الإدارة العليا</h3>
+            <nav className="grid gap-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <NavLink
+                    key={tab.to}
+                    to={tab.to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${
+                        isActive ? 'bg-cb-lime text-white' : 'text-cb-gray-600 hover:bg-cb-gray-100'
+                      }`
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                    {Number(tab.badge ?? 0) > 0 && (
+                      <span className="ms-auto inline-flex min-w-6 justify-center rounded-full bg-rose-100 px-1.5 py-0.5 text-xs font-black text-rose-700">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </NavLink>
+                )
+              })}
+            </nav>
+          </aside>
+
+          <main className="space-y-4">
+            <Outlet context={contextValue} />
+          </main>
+        </div>
+
+        <Footer />
+      </div>
+    </div>
+  )
+}

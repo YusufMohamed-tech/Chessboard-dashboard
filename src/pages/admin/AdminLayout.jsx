@@ -1,0 +1,91 @@
+import { Activity, BarChart3, BellRing, LayoutDashboard, ScanSearch } from 'lucide-react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import Footer from '../../components/Footer'
+import Navbar from '../../components/Navbar'
+
+const SHOW_POINTS_SECTION = true
+
+function getTabs(role, unreadNotificationsCount = 0) {
+  const basePath = role === 'ops' ? '/ops' : '/admin'
+  const tabs = [
+    { label: 'نظرة عامة', to: `${basePath}/overview`, icon: LayoutDashboard },
+    { label: 'الزيارات', to: `${basePath}/visits`, icon: ScanSearch },
+    { label: 'الإشعارات', to: `${basePath}/notifications`, icon: BellRing, badge: unreadNotificationsCount },
+    { label: 'التقارير', to: `${basePath}/reports`, icon: BarChart3 },
+  ]
+  if (role === 'admin' && SHOW_POINTS_SECTION) {
+    tabs.push({ label: 'النقاط', to: `${basePath}/points`, icon: Activity })
+  }
+  return tabs
+}
+
+function getTitle(pathname, role) {
+  if (pathname.includes('/visits')) return 'إدارة الزيارات'
+  if (pathname.includes('/notifications')) return 'مركز الإشعارات'
+  if (pathname.includes('/reports')) return 'التقارير والإحصائيات'
+  if (pathname.includes('/points')) return 'إدارة النقاط'
+  if (role === 'ops') return 'لوحة تحكم العمليات'
+  return 'لوحة تحكم المدير'
+}
+
+export default function AdminLayout(props) {
+  const location = useLocation()
+  const role = props.user?.role === 'ops' ? 'ops' : 'admin'
+  const unreadNotificationsCount = Number(props.unreadNotificationsCount ?? 0)
+  const tabs = getTabs(role, unreadNotificationsCount)
+  const sideTitle = role === 'ops' ? 'أقسام العمليات' : 'أقسام المدير'
+
+  const contextValue = {
+    ...props,
+    getShopperById: (shopperId) => props.shoppers.find((s) => s.id === shopperId),
+  }
+
+  return (
+    <div className="min-h-screen bg-cb-gray-50 py-4 md:py-6">
+      <div className="mx-auto max-w-7xl px-4">
+        <Navbar
+          title={getTitle(location.pathname, role)}
+          user={props.user}
+          onLogout={props.onLogout}
+          showLiveIndicator={props.isLive}
+        />
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-[240px_1fr]">
+          <aside className="h-fit rounded-2xl border border-cb-gray-200 bg-white p-3 shadow-sm">
+            <h3 className="mb-2 px-2 text-sm font-black text-cb-gray-700">{sideTitle}</h3>
+            <nav className="grid gap-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <NavLink
+                    key={tab.to}
+                    to={tab.to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${
+                        isActive ? 'bg-cb-lime text-white' : 'text-cb-gray-600 hover:bg-cb-gray-100'
+                      }`
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                    {Number(tab.badge ?? 0) > 0 && (
+                      <span className="ms-auto inline-flex min-w-6 justify-center rounded-full bg-rose-100 px-1.5 py-0.5 text-xs font-black text-rose-700">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </NavLink>
+                )
+              })}
+            </nav>
+          </aside>
+
+          <main className="space-y-4">
+            <Outlet context={contextValue} />
+          </main>
+        </div>
+
+        <Footer />
+      </div>
+    </div>
+  )
+}

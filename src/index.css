@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&family=Tajawal:wght@400;500;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --cb-lime: #a8c93a;
+    --cb-lime-dark: #8fb02e;
+    --cb-lime-light: #e8f5c8;
+    --cb-gray-900: #2d2d2d;
+    --cb-gray-700: #4a4a4a;
+    --cb-gray-500: #808080;
+    --cb-gray-200: #e5e5e5;
+    --cb-gray-100: #f5f5f5;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  html {
+    direction: rtl;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Tajawal', sans-serif;
+    background-color: #f5f5f5;
+    background-image:
+      radial-gradient(circle at 10% 5%, rgba(168, 201, 58, 0.06), transparent 40%),
+      radial-gradient(circle at 90% 10%, rgba(45, 45, 45, 0.04), transparent 42%),
+      radial-gradient(circle at 50% 100%, rgba(168, 201, 58, 0.05), transparent 45%);
+    color: #2d2d2d;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: 'Cairo', sans-serif;
+  }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0) scale(1); opacity: 0.4; }
+    50% { opacity: 0.8; }
+    100% { transform: translateY(-12px) scale(1.2); opacity: 0.3; }
+  }
+
+  @keyframes pulse-lime {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(168, 201, 58, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(168, 201, 58, 0); }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .animate-pulse-lime {
+    animation: pulse-lime 2s ease-in-out infinite;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-dark {
+    background: rgba(45, 45, 45, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}

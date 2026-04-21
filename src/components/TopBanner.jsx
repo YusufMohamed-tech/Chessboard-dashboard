@@ -17,23 +17,28 @@ export default function TopBanner() {
 
   return (
     <div className="relative z-50 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 40%, #1a1a1a 100%)' }}>
-      {/* Animated particles */}
+      {/* Animated particles — full width */}
       <div className="absolute inset-0 pointer-events-none">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: `${4 + i * 2}px`,
-              height: `${4 + i * 2}px`,
-              background: `rgba(168, 201, 58, ${0.15 + i * 0.03})`,
-              left: `${10 + i * 12}%`,
-              top: `${20 + (i % 3) * 25}%`,
-              animation: `float ${3 + i * 0.5}s ease-in-out infinite alternate`,
-              animationDelay: `${i * 0.3}s`,
-            }}
-          />
-        ))}
+        {Array.from({ length: 16 }).map((_, i) => {
+          const sizes = [4, 6, 5, 8, 3, 7, 5, 9, 4, 6, 7, 3, 8, 5, 6, 4]
+          const lefts = [2, 8, 15, 22, 30, 37, 44, 51, 58, 65, 72, 78, 84, 90, 95, 5]
+          const tops = [18, 55, 35, 70, 25, 60, 15, 45, 72, 30, 50, 20, 65, 40, 58, 75]
+          return (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: `${sizes[i]}px`,
+                height: `${sizes[i]}px`,
+                background: `rgba(168, 201, 58, ${0.15 + (i % 5) * 0.06})`,
+                left: `${lefts[i]}%`,
+                top: `${tops[i]}%`,
+                animation: `float ${2.5 + (i % 4) * 0.8}s ease-in-out infinite alternate`,
+                animationDelay: `${i * 0.25}s`,
+              }}
+            />
+          )
+        })}
       </div>
 
       {/* Moving gradient line */}

@@ -20,7 +20,7 @@ export default function TopBanner() {
       {/* Animated particles — full width */}
       <div className="absolute inset-0 pointer-events-none">
         {Array.from({ length: 16 }).map((_, i) => {
-          const sizes = [4, 6, 5, 8, 3, 7, 5, 9, 4, 6, 7, 3, 8, 5, 6, 4]
+          const sizes = [6, 9, 7, 11, 5, 10, 8, 12, 6, 9, 10, 5, 11, 7, 8, 6]
           const lefts = [2, 8, 15, 22, 30, 37, 44, 51, 58, 65, 72, 78, 84, 90, 95, 5]
           const tops = [18, 55, 35, 70, 25, 60, 15, 45, 72, 30, 50, 20, 65, 40, 58, 75]
           return (
@@ -30,7 +30,7 @@ export default function TopBanner() {
               style={{
                 width: `${sizes[i]}px`,
                 height: `${sizes[i]}px`,
-                background: `rgba(168, 201, 58, ${0.15 + (i % 5) * 0.06})`,
+                background: `rgba(168, 201, 58, ${0.35 + (i % 5) * 0.06})`,
                 left: `${lefts[i]}%`,
                 top: `${tops[i]}%`,
                 animation: `float ${2.5 + (i % 4) * 0.8}s ease-in-out infinite alternate`,

@@ -5,6 +5,7 @@ import { ErrorState, LoadingState } from '../../components/DataState'
 import useDebouncedValue from '../../hooks/useDebouncedValue'
 import StatusBadge from '../../components/StatusBadge'
 import LocationPicker from '../../components/LocationPicker'
+import CustomSelect from '../../components/CustomSelect'
 
 const filters = [
   { label: 'الكل', value: 'الكل' },
@@ -69,6 +70,13 @@ export default function Visits() {
     if (editingVisit.type) locs = locs.filter(l => l.brand === editingVisit.type)
     return locs
   }, [allowedLocations, editingVisit?.city, editingVisit?.type])
+
+  const cityOptions = useMemo(() => availableCities.map(c => ({ value: c.city, label: `${c.city} (${c.count})` })), [availableCities])
+  const brandOptions = useMemo(() => availableBrands.filter(b => b.key !== 'all').map(b => ({ value: b.key, label: b.label })), [availableBrands])
+  const statusAddOptions = useMemo(() => [{ value: 'معلقة', label: 'زيارة جديدة' }, { value: 'قادمة', label: 'إعادة الزيارة' }], [])
+  const statusEditOptions = useMemo(() => [{ value: 'معلقة', label: 'زيارة جديدة' }, { value: 'قادمة', label: 'إعادة الزيارة' }, { value: 'جاري المسح', label: 'جاري المسح' }, { value: 'مكتملة', label: 'مكتملة' }], [])
+  const periodOptions = useMemo(() => [{ value: 'صباحية', label: 'صباحية' }, { value: 'مسائية', label: 'مسائية' }], [])
+  const shopperOptions = useMemo(() => shoppers.map(s => ({ value: s.id, label: s.name })), [shoppers])
 
   const summary = {
     total: visits.length,
@@ -230,31 +238,24 @@ export default function Visits() {
             </div>
             <form onSubmit={handleCreateVisit} className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span>
-                <select value={newVisit.city} onChange={(e) => setNewVisit((p) => ({ ...p, city: e.target.value, officeName: '' }))} className={inputClasses}>
-                  <option value="">جميع المدن</option>
-                  {availableCities.map(c => <option key={c.city} value={c.city}>{c.city} ({c.count})</option>)}
-                </select>
+                <CustomSelect value={newVisit.city} onChange={(v) => setNewVisit((p) => ({ ...p, city: v, officeName: '' }))} options={cityOptions} placeholder="جميع المدن" searchable />
               </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>
-                <select value={newVisit.type} onChange={(e) => setNewVisit((p) => ({ ...p, type: e.target.value, officeName: '' }))} className={inputClasses}>
-                  <option value="">جميع البراندات</option>
-                  {(brands || []).filter(b => b.key !== 'all').filter(b => !userBrands || userBrands.includes(b.key)).map((b) => (
-                    <option key={b.key} value={b.key}>{b.label}</option>
-                  ))}
-                </select>
+                <CustomSelect value={newVisit.type} onChange={(v) => setNewVisit((p) => ({ ...p, type: v, officeName: '' }))} options={brandOptions} placeholder="جميع البراندات" />
               </label>
               <div className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span className="font-semibold">الموقع</span>
                 <LocationPicker locations={filteredAddLocations} value={newVisit.officeName ? { name: newVisit.officeName, city: newVisit.city, brand: newVisit.type } : null} onChange={(loc) => { if (loc) setNewVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setNewVisit((p) => ({ ...p, officeName: '' })) }} placeholder="ابحث واختر الموقع..." />
               </div>
-              <label className="space-y-1 text-sm text-cb-gray-600"><span>الحالة</span><select value={newVisit.status} onChange={(e) => setNewVisit((p) => ({ ...p, status: e.target.value }))} className={inputClasses}><option value="معلقة">زيارة جديدة</option><option value="قادمة">إعادة الزيارة</option></select></label>
+              <label className="space-y-1 text-sm text-cb-gray-600"><span>الحالة</span>
+                <CustomSelect value={newVisit.status} onChange={(v) => setNewVisit((p) => ({ ...p, status: v }))} options={statusAddOptions} placeholder="اختر الحالة" />
+              </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>التاريخ</span><input type="date" value={newVisit.date} onChange={(e) => setNewVisit((p) => ({ ...p, date: e.target.value }))} className={inputClasses} /></label>
-              <label className="space-y-1 text-sm text-cb-gray-600"><span>الفترة</span><select value={newVisit.time} onChange={(e) => setNewVisit((p) => ({ ...p, time: e.target.value }))} className={inputClasses}><option value="صباحية">صباحية</option><option value="مسائية">مسائية</option></select></label>
+              <label className="space-y-1 text-sm text-cb-gray-600"><span>الفترة</span>
+                <CustomSelect value={newVisit.time} onChange={(v) => setNewVisit((p) => ({ ...p, time: v }))} options={periodOptions} placeholder="اختر الفترة" />
+              </label>
               {canAssignShopper && (
                 <label className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span>الوكيل الميداني</span>
-                  <select value={newVisit.assignedShopperId} onChange={(e) => setNewVisit((p) => ({ ...p, assignedShopperId: e.target.value }))} className={inputClasses}>
-                    <option value="">في انتظار التعيين</option>
-                    {shoppers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <CustomSelect value={newVisit.assignedShopperId} onChange={(v) => setNewVisit((p) => ({ ...p, assignedShopperId: v }))} options={shopperOptions} placeholder="في انتظار التعيين" searchable />
                 </label>
               )}
               <label className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span>تفاصيل السيناريو</span><textarea value={newVisit.scenario} onChange={(e) => setNewVisit((p) => ({ ...p, scenario: e.target.value }))} rows={3} className="w-full rounded-xl border border-cb-gray-300 bg-white p-3 outline-none focus:border-cb-lime" /></label>
@@ -274,31 +275,24 @@ export default function Visits() {
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm text-cb-gray-600"><span>المدينة</span>
-                <select value={editingVisit.city} onChange={(e) => setEditingVisit((p) => ({ ...p, city: e.target.value, officeName: '' }))} className={inputClasses}>
-                  <option value="">جميع المدن</option>
-                  {availableCities.map(c => <option key={c.city} value={c.city}>{c.city} ({c.count})</option>)}
-                </select>
+                <CustomSelect value={editingVisit.city} onChange={(v) => setEditingVisit((p) => ({ ...p, city: v, officeName: '' }))} options={cityOptions} placeholder="جميع المدن" searchable />
               </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>البراند</span>
-                <select value={editingVisit.type} onChange={(e) => setEditingVisit((p) => ({ ...p, type: e.target.value, officeName: '' }))} className={inputClasses}>
-                  <option value="">جميع البراندات</option>
-                  {(brands || []).filter(b => b.key !== 'all').filter(b => !userBrands || userBrands.includes(b.key)).map((b) => (
-                    <option key={b.key} value={b.key}>{b.label}</option>
-                  ))}
-                </select>
+                <CustomSelect value={editingVisit.type} onChange={(v) => setEditingVisit((p) => ({ ...p, type: v, officeName: '' }))} options={brandOptions} placeholder="جميع البراندات" />
               </label>
               <div className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span className="font-semibold">الموقع</span>
                 <LocationPicker locations={filteredEditLocations} value={editingVisit.officeName ? { name: editingVisit.officeName, city: editingVisit.city, brand: editingVisit.type } : null} onChange={(loc) => { if (loc) setEditingVisit((p) => ({ ...p, officeName: loc.name, city: loc.city, type: loc.brand || p.type })); else setEditingVisit((p) => ({ ...p, officeName: '' })) }} placeholder="ابحث واختر الموقع..." />
               </div>
-              <label className="space-y-1 text-sm text-cb-gray-600"><span>الحالة</span><select value={editingVisit.status} onChange={(e) => setEditingVisit((p) => ({ ...p, status: e.target.value }))} className={inputClasses}><option value="معلقة">زيارة جديدة</option><option value="قادمة">إعادة الزيارة</option><option value="جاري المسح">جاري المسح</option></select></label>
+              <label className="space-y-1 text-sm text-cb-gray-600"><span>الحالة</span>
+                <CustomSelect value={editingVisit.status} onChange={(v) => setEditingVisit((p) => ({ ...p, status: v }))} options={statusEditOptions} placeholder="اختر الحالة" />
+              </label>
               <label className="space-y-1 text-sm text-cb-gray-600"><span>التاريخ</span><input type="date" value={editingVisit.date} onChange={(e) => setEditingVisit((p) => ({ ...p, date: e.target.value }))} className={inputClasses} /></label>
-              <label className="space-y-1 text-sm text-cb-gray-600"><span>الفترة</span><select value={editingVisit.time} onChange={(e) => setEditingVisit((p) => ({ ...p, time: e.target.value }))} className={inputClasses}><option value="صباحية">صباحية</option><option value="مسائية">مسائية</option></select></label>
+              <label className="space-y-1 text-sm text-cb-gray-600"><span>الفترة</span>
+                <CustomSelect value={editingVisit.time} onChange={(v) => setEditingVisit((p) => ({ ...p, time: v }))} options={periodOptions} placeholder="اختر الفترة" />
+              </label>
               {canAssignShopper && (
                 <label className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span>الوكيل الميداني</span>
-                  <select value={editingVisit.assignedShopperId ?? ''} onChange={(e) => setEditingVisit((p) => ({ ...p, assignedShopperId: e.target.value }))} className={inputClasses}>
-                    <option value="">في انتظار التعيين</option>
-                    {shoppers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <CustomSelect value={editingVisit.assignedShopperId ?? ''} onChange={(v) => setEditingVisit((p) => ({ ...p, assignedShopperId: v }))} options={shopperOptions} placeholder="في انتظار التعيين" searchable />
                 </label>
               )}
               <label className="space-y-1 text-sm text-cb-gray-600 sm:col-span-2"><span>تفاصيل السيناريو</span><textarea value={editingVisit.scenario} onChange={(e) => setEditingVisit((p) => ({ ...p, scenario: e.target.value }))} rows={3} className="w-full rounded-xl border border-cb-gray-300 bg-white p-3 outline-none focus:border-cb-lime" /></label>

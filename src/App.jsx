@@ -555,15 +555,33 @@ function App() {
     isLive: true, markNotificationAsRead, markAllNotificationsAsRead,
     onLogout: handleLogout,
   }
+  // ─── Brand-scoped data for admin/ops ────────────────────────────────────────
+  const adminBrands = activeUser?.assignedBrands
+  const isBrandScoped = activeUser?.role === 'admin'
+  const brandScopedVisits = useMemo(() => {
+    if (!isBrandScoped) return visitsWithIssues
+    // If no brands assigned → block all data
+    if (!adminBrands || adminBrands.length === 0) return []
+    return visitsWithIssues.filter((v) => {
+      const vBrand = v.brand || v.type || ''
+      return adminBrands.includes(vBrand)
+    })
+  }, [visitsWithIssues, adminBrands, isBrandScoped])
+
+  const brandScopedIssues = useMemo(() => {
+    if (!isBrandScoped) return issuesWithVisitMeta
+    const scopedVisitIds = new Set(brandScopedVisits.map((v) => v.id))
+    return issuesWithVisitMeta.filter((iss) => scopedVisitIds.has(iss.visit_id))
+  }, [issuesWithVisitMeta, brandScopedVisits, isBrandScoped])
 
   const adminScopeProps = {
-    ...baseProps, user: activeUser, shoppers, visits: visitsWithIssues, issues: issuesWithVisitMeta,
+    ...baseProps, user: activeUser, shoppers, visits: brandScopedVisits, issues: brandScopedIssues,
     addShopper, updateShopper, updateShopperStatus, deleteShopper,
     addVisit, updateVisit, deleteVisit, completeVisit, awardShopperPoints,
   }
 
   const opsScopeProps = {
-    ...baseProps, user: activeUser, shoppers, visits: visitsWithIssues, issues: issuesWithVisitMeta,
+    ...baseProps, user: activeUser, shoppers, visits: brandScopedVisits, issues: brandScopedIssues,
     addVisit, updateVisit, deleteVisit,
   }
 

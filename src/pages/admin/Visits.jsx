@@ -31,9 +31,10 @@ export default function Visits() {
   const canAssignShopper = user?.role === 'superadmin' || user?.role === 'ops'
   const canDeleteVisit = user?.role === 'superadmin' || user?.role === 'ops'
 
-  // Admin brand scoping: if admin has assignedBrands, only show those brands
+  // Brand tabs: show only assigned brands for scoped admins
   const userBrands = user?.assignedBrands?.length ? user.assignedBrands : null
-  const availableBrands = (brands || []).filter((b) => !userBrands || b.key === 'all' || userBrands.includes(b.key))
+  const isSuperAdmin = user?.role === 'superadmin'
+  const availableBrands = (brands || []).filter((b) => isSuperAdmin || !userBrands ? true : b.key === 'all' || userBrands.includes(b.key))
 
   const summary = {
     total: visits.length,

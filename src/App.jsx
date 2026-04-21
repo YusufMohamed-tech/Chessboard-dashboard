@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { calculateWeightedScore, ALL_QUESTION_KEYS, calculatePercentage } from './utils/scoring'
 import {
   DEMO_CREDENTIALS,
+  BRANDS,
   mockAdmins,
   mockShoppers as initialShoppers,
   mockVisits as initialVisits,
@@ -548,7 +549,7 @@ function App() {
 
   // ─── Scope props ──────────────────────────────────────────────────────────
   const baseProps = {
-    offices, evaluationCriteria, pointsRules, locationDatabase,
+    offices, evaluationCriteria, pointsRules, locationDatabase, brands: BRANDS,
     notifications: scopedNotifications, notificationsEnabled: true,
     unreadNotificationsCount, dataLoading: false, dataError: '',
     isLive: true, markNotificationAsRead, markAllNotificationsAsRead,

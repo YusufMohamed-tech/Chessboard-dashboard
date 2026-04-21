@@ -1,6 +1,17 @@
 // ─── Chessboard Mystery Shopper Demo — Mock Data ────────────────────────────
 // Comprehensive dataset for telecom booth mystery shopping operations
 
+// ─── BRANDS ─────────────────────────────────────────────────────────────────
+export const BRANDS = [
+  { key: 'all', label: 'جميع البراندات', color: '#a8c93a' },
+  { key: 'redbull', label: 'Redbull', color: '#dc2626' },
+  { key: 'mobily', label: 'Mobily', color: '#6d28d9' },
+  { key: 'stc', label: 'STC', color: '#4f46e5' },
+  { key: 'zain', label: 'Zain', color: '#059669' },
+  { key: 'virgin', label: 'Virgin', color: '#e11d48' },
+  { key: 'salam', label: 'Salam', color: '#0891b2' },
+]
+
 // ─── DEMO CREDENTIALS ──────────────────────────────────────────────────────
 export const DEMO_CREDENTIALS = {
   superadmin: { email: 'admin@chessboard.sa', password: 'demo2026', name: 'عبدالله المطيري' },
@@ -20,6 +31,7 @@ export const mockAdmins = [
     city: 'الرياض',
     status: 'active',
     role: 'superadmin',
+    assignedBrand: null, // sees all
   },
   {
     id: 'admin-001',
@@ -30,6 +42,7 @@ export const mockAdmins = [
     city: 'جدة',
     status: 'active',
     role: 'admin',
+    assignedBrand: 'redbull',
   },
   {
     id: 'admin-002',
@@ -40,6 +53,7 @@ export const mockAdmins = [
     city: 'الدمام',
     status: 'active',
     role: 'admin',
+    assignedBrand: 'mobily',
   },
   {
     id: 'ops-001',
@@ -50,6 +64,7 @@ export const mockAdmins = [
     city: 'الرياض',
     status: 'active',
     role: 'ops',
+    assignedBrand: 'stc',
   },
   {
     id: 'ops-002',
@@ -60,6 +75,7 @@ export const mockAdmins = [
     city: 'جدة',
     status: 'active',
     role: 'ops',
+    assignedBrand: 'zain',
   },
 ]
 
@@ -181,18 +197,20 @@ export const mockShoppers = [
 
 // ─── OFFICES (Telecom Booths) ───────────────────────────────────────────────
 export const mockOffices = [
-  { id: 'off-001', name: 'كشك STC - الرياض بارك', city: 'الرياض', type: 'كشك اتصالات', location: 'الرياض بارك مول', status: 'active' },
-  { id: 'off-002', name: 'كشك موبايلي - النخيل مول', city: 'الرياض', type: 'كشك اتصالات', location: 'النخيل مول', status: 'active' },
-  { id: 'off-003', name: 'كشك زين - رد سي مول', city: 'جدة', type: 'كشك اتصالات', location: 'رد سي مول', status: 'active' },
-  { id: 'off-004', name: 'كشك STC - مول العرب', city: 'جدة', type: 'كشك اتصالات', location: 'مول العرب', status: 'active' },
-  { id: 'off-005', name: 'كشك موبايلي - الظهران مول', city: 'الدمام', type: 'كشك اتصالات', location: 'الظهران مول', status: 'active' },
-  { id: 'off-006', name: 'كشك زين - النور مول', city: 'المدينة المنورة', type: 'كشك اتصالات', location: 'النور مول', status: 'active' },
-  { id: 'off-007', name: 'كشك STC - العثيم مول', city: 'الرياض', type: 'كشك اتصالات', location: 'العثيم مول', status: 'active' },
-  { id: 'off-008', name: 'كشك موبايلي - الأندلس مول', city: 'جدة', type: 'كشك اتصالات', location: 'الأندلس مول', status: 'active' },
-  { id: 'off-009', name: 'كشك زين - الراشد مول', city: 'الخبر', type: 'كشك اتصالات', location: 'الراشد مول', status: 'active' },
-  { id: 'off-010', name: 'كشك STC - الحكير مول', city: 'مكة المكرمة', type: 'كشك اتصالات', location: 'الحكير مول', status: 'active' },
-  { id: 'off-011', name: 'كشك موبايلي - تبوك بارك', city: 'تبوك', type: 'كشك اتصالات', location: 'تبوك بارك', status: 'active' },
-  { id: 'off-012', name: 'كشك زين - بانوراما مول', city: 'الرياض', type: 'كشك اتصالات', location: 'بانوراما مول', status: 'active' },
+  { id: 'off-001', name: 'كشك STC - الرياض بارك', city: 'الرياض', type: 'كشك اتصالات', location: 'الرياض بارك مول', status: 'active', brand: 'stc' },
+  { id: 'off-002', name: 'كشك موبايلي - النخيل مول', city: 'الرياض', type: 'كشك اتصالات', location: 'النخيل مول', status: 'active', brand: 'mobily' },
+  { id: 'off-003', name: 'كشك زين - رد سي مول', city: 'جدة', type: 'كشك اتصالات', location: 'رد سي مول', status: 'active', brand: 'zain' },
+  { id: 'off-004', name: 'كشك STC - مول العرب', city: 'جدة', type: 'كشك اتصالات', location: 'مول العرب', status: 'active', brand: 'stc' },
+  { id: 'off-005', name: 'كشك موبايلي - الظهران مول', city: 'الدمام', type: 'كشك اتصالات', location: 'الظهران مول', status: 'active', brand: 'mobily' },
+  { id: 'off-006', name: 'كشك زين - النور مول', city: 'المدينة المنورة', type: 'كشك اتصالات', location: 'النور مول', status: 'active', brand: 'zain' },
+  { id: 'off-007', name: 'كشك STC - العثيم مول', city: 'الرياض', type: 'كشك اتصالات', location: 'العثيم مول', status: 'active', brand: 'stc' },
+  { id: 'off-008', name: 'كشك موبايلي - الأندلس مول', city: 'جدة', type: 'كشك اتصالات', location: 'الأندلس مول', status: 'active', brand: 'mobily' },
+  { id: 'off-009', name: 'كشك زين - الراشد مول', city: 'الخبر', type: 'كشك اتصالات', location: 'الراشد مول', status: 'active', brand: 'zain' },
+  { id: 'off-010', name: 'كشك STC - الحكير مول', city: 'مكة المكرمة', type: 'كشك اتصالات', location: 'الحكير مول', status: 'active', brand: 'stc' },
+  { id: 'off-011', name: 'كشك موبايلي - تبوك بارك', city: 'تبوك', type: 'كشك اتصالات', location: 'تبوك بارك', status: 'active', brand: 'mobily' },
+  { id: 'off-012', name: 'كشك زين - بانوراما مول', city: 'الرياض', type: 'كشك اتصالات', location: 'بانوراما مول', status: 'active', brand: 'zain' },
+  { id: 'off-013', name: 'Redbull - الرياض بارك', city: 'الرياض', type: 'كشك', location: 'الرياض بارك مول', status: 'active', brand: 'redbull' },
+  { id: 'off-014', name: 'Redbull - رد سي مول', city: 'جدة', type: 'كشك', location: 'رد سي مول', status: 'active', brand: 'redbull' },
 ]
 
 // ─── EVALUATION CRITERIA (Checklist: 5 categories × 3 questions = 15 total) ─

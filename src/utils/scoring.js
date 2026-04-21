@@ -3,8 +3,7 @@
 export const EVALUATION_CATEGORIES = [
   {
     key: 'firstImpression',
-    label: 'الانطباع الأول',
-    emoji: '👋',
+    label: 'First Impression — الانطباع الأول',
     questions: [
       { key: 'fi_q1', label: 'هل الموظف بادر بالتحية خلال أول 5 ثواني؟' },
       { key: 'fi_q2', label: 'هل كان واقف بشكل احترافي (مش قاعد/مشغول بالموبايل)؟' },
@@ -13,8 +12,7 @@ export const EVALUATION_CATEGORIES = [
   },
   {
     key: 'communication',
-    label: 'التواصل',
-    emoji: '💬',
+    label: 'Communication — التواصل',
     questions: [
       { key: 'cm_q1', label: 'هل سأل العميل عن احتياجاته؟' },
       { key: 'cm_q2', label: 'هل شرح العرض بدون ما العميل يطلب؟' },
@@ -23,8 +21,7 @@ export const EVALUATION_CATEGORIES = [
   },
   {
     key: 'productKnowledge',
-    label: 'المعرفة بالمنتج',
-    emoji: '📦',
+    label: 'Product Knowledge — المعرفة بالمنتج',
     questions: [
       { key: 'pk_q1', label: 'هل قدم عرض واحد على الأقل صحيح 100%؟' },
       { key: 'pk_q2', label: 'هل جاوب على سؤال العميل بدون معلومات غلط؟' },
@@ -33,8 +30,7 @@ export const EVALUATION_CATEGORIES = [
   },
   {
     key: 'salesSkills',
-    label: 'مهارات البيع',
-    emoji: '🧠',
+    label: 'Sales Skills — مهارات البيع',
     questions: [
       { key: 'ss_q1', label: 'هل حاول يقفل البيع؟ (Ask for closing)' },
       { key: 'ss_q2', label: 'هل اقترح باقة إضافية (Upsell / Cross-sell)؟' },
@@ -43,8 +39,7 @@ export const EVALUATION_CATEGORIES = [
   },
   {
     key: 'brandCompliance',
-    label: 'الالتزام بالبراند',
-    emoji: '🏢',
+    label: 'Brand Compliance — الالتزام بالبراند',
     questions: [
       { key: 'bc_q1', label: 'هل الستاند نظيف ومرتب؟' },
       { key: 'bc_q2', label: 'هل في branding واضح للشركة؟' },

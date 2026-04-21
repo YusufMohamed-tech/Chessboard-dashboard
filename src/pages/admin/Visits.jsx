@@ -19,9 +19,10 @@ function getInitialVisit() {
 }
 
 export default function Visits() {
-  const { user, visits, shoppers, addVisit, updateVisit, deleteVisit, getShopperById, locationDatabase, dataLoading, dataError } = useOutletContext()
+  const { user, visits, shoppers, addVisit, updateVisit, deleteVisit, getShopperById, locationDatabase, brands, dataLoading, dataError } = useOutletContext()
 
   const [activeFilter, setActiveFilter] = useState('الكل')
+  const [activeBrand, setActiveBrand] = useState('all')
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, 300)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -29,6 +30,22 @@ export default function Visits() {
   const [newVisit, setNewVisit] = useState(getInitialVisit)
   const canAssignShopper = user?.role === 'superadmin' || user?.role === 'ops'
   const canDeleteVisit = user?.role === 'superadmin' || user?.role === 'ops'
+
+  // Derive brand from office name
+  const deriveBrand = (officeName = '') => {
+    const n = officeName.toLowerCase()
+    if (n.includes('stc')) return 'stc'
+    if (n.includes('موبايلي') || n.includes('mobily')) return 'mobily'
+    if (n.includes('زين') || n.includes('zain')) return 'zain'
+    if (n.includes('redbull') || n.includes('ريدبول')) return 'redbull'
+    if (n.includes('virgin') || n.includes('فيرجن')) return 'virgin'
+    if (n.includes('salam') || n.includes('سلام')) return 'salam'
+    return 'other'
+  }
+
+  // Admin brand scoping: if admin has assignedBrand, only show that brand
+  const userBrand = user?.assignedBrand || null
+  const availableBrands = (brands || []).filter((b) => !userBrand || b.key === 'all' || b.key === userBrand)
 
   const summary = {
     total: visits.length,
@@ -42,9 +59,13 @@ export default function Visits() {
     return visits.filter((v) => {
       const matchFilter = activeFilter === 'الكل' || v.status === activeFilter
       const matchQuery = `${v.officeName} ${v.city}`.toLowerCase().includes(debouncedQuery.toLowerCase())
-      return matchFilter && matchQuery
+      const visitBrand = deriveBrand(v.officeName)
+      const matchBrand = activeBrand === 'all' || visitBrand === activeBrand
+      // If admin has assigned brand, enforce it
+      const matchScope = !userBrand || visitBrand === userBrand
+      return matchFilter && matchQuery && matchBrand && matchScope
     })
-  }, [activeFilter, debouncedQuery, visits])
+  }, [activeFilter, activeBrand, debouncedQuery, visits, userBrand])
 
   const handleCreateVisit = async (e) => {
     e.preventDefault()
@@ -96,6 +117,28 @@ export default function Visits() {
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3"><p className="text-xs text-amber-700">إعادة الزيارة</p><p className="mt-1 text-2xl font-black text-amber-800">{summary.upcoming}</p></div>
           <div className="rounded-lg border border-cb-gray-300 bg-cb-gray-100 p-3"><p className="text-xs text-cb-gray-600">زيارة جديدة</p><p className="mt-1 text-2xl font-black text-cb-gray-800">{summary.pending}</p></div>
           <div className="rounded-lg border border-rose-200 bg-rose-50 p-3"><p className="text-xs text-rose-700">طلبات مسح</p><p className="mt-1 text-2xl font-black text-rose-800">{summary.deleting}</p></div>
+        </div>
+
+        {/* Brand tabs */}
+        <div className="mt-4 rounded-xl border border-cb-gray-200 bg-cb-gray-50 p-1.5 flex flex-wrap gap-1.5">
+          {availableBrands.map((b) => (
+            <button key={b.key} type="button" onClick={() => setActiveBrand(b.key)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all ${
+                activeBrand === b.key
+                  ? 'bg-white text-cb-gray-900 shadow-sm ring-1 ring-cb-gray-200'
+                  : 'text-cb-gray-500 hover:bg-white/60 hover:text-cb-gray-700'
+              }`}>
+              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: b.color }} />
+              {b.label}
+              {activeBrand === b.key && (
+                <span className="ms-1 rounded-full bg-cb-gray-200 px-2 py-0.5 text-[10px] font-black text-cb-gray-700">
+                  {b.key === 'all'
+                    ? visits.length
+                    : visits.filter((v) => deriveBrand(v.officeName) === b.key).length}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">

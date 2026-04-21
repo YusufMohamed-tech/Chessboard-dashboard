@@ -129,7 +129,6 @@ export default function VisitDetail({ fromCompleted = false }) {
             {/* Category header */}
             <div className="flex items-center justify-between gap-3 border-b border-cb-gray-200 bg-cb-gray-50 px-4 py-3">
               <h3 className="font-display text-lg font-black text-cb-gray-900">
-                <span className="me-2">{cat.emoji}</span>
                 {cat.label}
               </h3>
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${catScore === catTotal ? 'border-emerald-200 bg-emerald-100 text-emerald-700' : catScore > 0 ? 'border-amber-200 bg-amber-100 text-amber-700' : 'border-cb-gray-200 bg-cb-gray-100 text-cb-gray-500'}`}>

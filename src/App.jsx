@@ -88,6 +88,7 @@ function mapAdminRow(row) {
     city: row.city ?? '',
     status: toArabicUserStatus(row.status),
     role: normalizeAdminRole(row.role),
+    assignedBrands: Array.isArray(row.assignedBrands) ? row.assignedBrands : [],
   }
 }
 
@@ -138,6 +139,7 @@ function mapVisitRow(row) {
     officeName: row.office_name ?? '',
     city: row.city ?? '',
     type: row.type ?? 'تقييم شامل',
+    brand: row.brand ?? '',
     status: row.status ?? 'معلقة',
     scenario: row.scenario ?? '',
     membershipId: row.membership_id ?? '',

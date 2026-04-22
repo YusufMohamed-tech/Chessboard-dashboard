@@ -2,6 +2,7 @@ import { BellRing, FileBarChart2, LayoutDashboard, ScanSearch, SquareCheckBig } 
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import Footer from '../../components/Footer'
 import Navbar from '../../components/Navbar'
+import AiChatbot from '../../components/AiChatbot'
 
 function getShopperTabs(unreadNotificationsCount = 0) {
   return [
@@ -68,6 +69,13 @@ export default function ShopperLayout(props) {
 
         <Footer />
       </div>
+
+      {/* Floating Chatbot Widget */}
+      <AiChatbot 
+        visits={myVisits} 
+        shoppers={props.shoppers} 
+        locations={props.offices} 
+      />
     </div>
   )
 }

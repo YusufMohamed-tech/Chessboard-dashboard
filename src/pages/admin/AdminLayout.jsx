@@ -2,6 +2,7 @@ import { Activity, BarChart3, BellRing, LayoutDashboard, ScanSearch } from 'luci
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import Footer from '../../components/Footer'
 import Navbar from '../../components/Navbar'
+import AiChatbot from '../../components/AiChatbot'
 
 const SHOW_POINTS_SECTION = true
 
@@ -86,6 +87,13 @@ export default function AdminLayout(props) {
 
         <Footer />
       </div>
+
+      {/* Floating Chatbot Widget */}
+      <AiChatbot 
+        visits={props.visits} 
+        shoppers={props.shoppers} 
+        locations={props.offices} 
+      />
     </div>
   )
 }

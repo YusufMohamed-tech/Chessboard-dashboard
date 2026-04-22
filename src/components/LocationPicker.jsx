@@ -63,8 +63,6 @@ export default function LocationPicker({ locations = [], value, onChange, placeh
           <span className="flex items-center gap-2 text-cb-gray-800 truncate">
             <MapPin className="h-3.5 w-3.5 text-cb-lime shrink-0" />
             <span className="font-bold truncate">{selected.name}</span>
-            <span className="text-cb-gray-400">•</span>
-            <span className="text-cb-gray-500 truncate">{selected.city}</span>
           </span>
         ) : (
           <span className="text-cb-gray-400">{placeholder}</span>
@@ -120,11 +118,9 @@ export default function LocationPicker({ locations = [], value, onChange, placeh
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Building2 className="h-3.5 w-3.5 text-cb-gray-400 shrink-0" />
                         <span className="font-bold text-cb-gray-800 truncate">{loc.name}</span>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 ps-5.5 text-xs text-cb-gray-500">
-                        <Tag className="h-3 w-3" />
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-cb-gray-500">
                         {loc.brand}
                         <span className="text-cb-gray-300">•</span>
                         {loc.project}

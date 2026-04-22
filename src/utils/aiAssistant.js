@@ -32,9 +32,16 @@ export async function askAiChatbot(messages, contextStr) {
     })
   })
 
-  const data = await response.json()
+  let data = {}
+  try {
+    const text = await response.text()
+    data = text ? JSON.parse(text) : {}
+  } catch (err) {
+    throw new Error('Invalid server response (Status: ' + response.status + ')')
+  }
+
   if (!response.ok || !data.success) {
-    throw new Error(data.error || 'Failed to fetch response')
+    throw new Error(data.error || 'Failed to fetch response (Status: ' + response.status + ')')
   }
 
   return data.answer

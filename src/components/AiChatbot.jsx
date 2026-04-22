@@ -45,7 +45,8 @@ export default function AiChatbot({ visits, shoppers, locations }) {
 
       setMessages((prev) => [...prev, { role: 'assistant', content: answer }])
     } catch (error) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'عذراً، حدث خطأ أثناء معالجة طلبك.' }])
+      console.error('Chat API Error:', error)
+      setMessages((prev) => [...prev, { role: 'assistant', content: `عذراً، حدث خطأ: ${error.message}` }])
     } finally {
       setIsThinking(false)
     }

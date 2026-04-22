@@ -7,7 +7,7 @@ export async function uploadAudioFile(file, visitId) {
     formData.append('call_id', visitId)
   }
 
-  const response = await fetch('/api/upload-audio.cjs', {
+  const response = await fetch('/api/upload-audio', {
     method: 'POST',
     body: formData,
   })

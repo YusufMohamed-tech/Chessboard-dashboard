@@ -134,3 +134,9 @@ module.exports = async (req, res) => {
     return res.status(err.status || 500).json({ success: false, error: err.message || 'Internal error' })
   }
 }
+
+module.exports.config = {
+  api: {
+    bodyParser: false,
+  },
+}

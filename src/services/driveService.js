@@ -12,10 +12,16 @@ export async function uploadAudioFile(file, visitId) {
     body: formData,
   })
 
-  const result = await response.json()
+  let result = {}
+  try {
+    const text = await response.text()
+    result = text ? JSON.parse(text) : {}
+  } catch (err) {
+    throw new Error('Server returned an invalid response (not JSON). Status: ' + response.status)
+  }
   
   if (!response.ok || !result.success) {
-    throw new Error(result.error || 'Failed to upload audio file')
+    throw new Error(result.error || 'Failed to upload audio file. Status: ' + response.status)
   }
 
   return result

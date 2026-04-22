@@ -9,6 +9,10 @@ export const config = {
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENAI_API_KEY,
+  defaultHeaders: {
+    'HTTP-Referer': 'https://chessboard-dashboard.vercel.app',
+    'X-Title': 'Chessboard Dashboard'
+  }
 })
 
 const SYSTEM_PROMPT = `أنت مساعد ذكي احترافي للوحة تحكم "تشيسبورد" (Chessboard) الخاصة بمتابعة المتسوقين السريين (Mystery Shoppers).
@@ -41,7 +45,7 @@ export default async function handler(req, res) {
     const apiMessages = [contextMessage, ...messages]
 
     const response = await openai.chat.completions.create({
-      model: 'openai/gpt-4o-mini',
+      model: 'openrouter/free',
       messages: apiMessages,
       temperature: 0.2,
       max_tokens: 1000,

@@ -78,8 +78,8 @@ export default function Login({ onLogin }) {
           <h1 className="mt-6 font-display text-5xl font-bold leading-[1.32] text-cb-gray-900 max-md:text-4xl max-md:leading-[1.4]">
             نظام المتحري الخفي
           </h1>
-          <p className="mt-2 text-sm font-bold text-cb-lime-dark tracking-wide">المنصة الإلكترونية للتقييم الميداني</p>
-          <p className="mt-3 text-lg leading-relaxed text-cb-gray-500">اختر دورك للدخول إلى النظام</p>
+          <p className="mt-3 text-sm font-bold text-cb-lime-dark">المنصة الإلكترونية للتقييم الميداني</p>
+          <p className="mt-4 text-lg leading-relaxed text-cb-gray-500">اختر دورك للدخول إلى النظام</p>
         </section>
 
         {/* Portal Selection */}

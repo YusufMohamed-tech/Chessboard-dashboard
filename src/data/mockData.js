@@ -258,7 +258,7 @@ export const mockEvaluationCriteria = [
 ]
 
 // ─── VISITS (auto-generated from 189 active Excel locations) ────────────────
-export { mockVisits } from './generatedVisits'
+export { mockVisits } from './generatedVisits.js'
 
 
 // ─── ISSUES ─────────────────────────────────────────────────────────────────

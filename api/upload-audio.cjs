@@ -1,19 +1,19 @@
+const { google } = require('googleapis')
 const fs = require('fs')
+const { createClient } = require('@supabase/supabase-js')
+
 let formidablePkg
 try {
   formidablePkg = require('formidable')
 } catch (e) {
   formidablePkg = null
 }
+
 function makeFormidable(opts) {
   if (!formidablePkg) throw new Error('formidable module not available')
   const Ctor = formidablePkg.IncomingForm || formidablePkg.Formidable || formidablePkg
   try { return new Ctor(opts) } catch (e) { return Ctor(opts) }
 }
-
-const driveService = require('../server/src/services/driveService')
-const supabaseService = require('../server/src/services/supabaseService')
-const logger = require('../server/src/utils/logger')
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ success: false, error: 'Expected multipart/form-data' })
   }
 
-  const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE_BYTES || '10485760', 10)
+  const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
   try {
     const form = makeFormidable({ keepExtensions: true, maxFileSize: MAX_FILE_SIZE })
@@ -37,9 +37,8 @@ module.exports = async (req, res) => {
     })
 
     const { fields, files } = parsed
-    const callId = fields && (fields.call_id || fields.callId || fields.call) || null
+    const visitId = fields && (fields.visit_id || fields.visitId || fields.call_id) || null
 
-    // Find uploaded file (support several field names)
     let fileObj = (files && (files.file || files.file_upload || files.upload)) || null
     if (!fileObj && files) {
       const vals = Object.values(files)
@@ -50,44 +49,88 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' })
     }
 
-    // formidable may return array for same field
     if (Array.isArray(fileObj)) fileObj = fileObj[0]
 
     const filePath = fileObj.filepath || fileObj.path || fileObj.file
-    const mimeType = fileObj.mimetype || fileObj.type || fileObj.mime || 'application/octet-stream'
-    const originalFilename = fileObj.originalFilename || fileObj.name || fileObj.filename || 'upload'
+    const mimeType = fileObj.mimetype || fileObj.type || fileObj.mime || 'audio/mpeg'
+    const originalFilename = fileObj.originalFilename || fileObj.name || fileObj.filename || 'audio.mp3'
 
     const buffer = await fs.promises.readFile(filePath)
 
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID_AUTO
-    if (!folderId) return res.status(500).json({ success: false, error: 'Missing GOOGLE_DRIVE_FOLDER_ID' })
+    // Setup Google Drive Client
+    // Assume GOOGLE_SERVICE_ACCOUNT is a JSON string of the credentials
+    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT
+    if (!serviceAccountJson) {
+      return res.status(500).json({ success: false, error: 'Missing GOOGLE_SERVICE_ACCOUNT env var' })
+    }
 
-    const finalFileName = `${callId ? callId + '_' : ''}${Date.now()}_${originalFilename}`
-    logger.info(`Uploading ${finalFileName} (${buffer.length} bytes) to Drive`)
+    let credentials
+    try {
+      credentials = JSON.parse(serviceAccountJson)
+    } catch (e) {
+      return res.status(500).json({ success: false, error: 'Invalid GOOGLE_SERVICE_ACCOUNT JSON' })
+    }
 
-    const { fileId, previewUrl } = await driveService.uploadFile({
-      fileBuffer: buffer,
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/drive.file'],
+    })
+    
+    const drive = google.drive({ version: 'v3', auth })
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+    if (!folderId) {
+      return res.status(500).json({ success: false, error: 'Missing GOOGLE_DRIVE_FOLDER_ID' })
+    }
+
+    const finalFileName = `${visitId ? visitId + '_' : ''}${Date.now()}_${originalFilename}`
+    
+    const media = {
       mimeType,
-      fileName: finalFileName,
-      folderId
+      body: fs.createReadStream(filePath),
+    }
+
+    const driveRes = await drive.files.create({
+      requestBody: {
+        name: finalFileName,
+        parents: [folderId],
+      },
+      media: media,
+      fields: 'id, webViewLink, webContentLink',
     })
 
+    const fileId = driveRes.data.id
+    const previewUrl = driveRes.data.webViewLink
+
+    // Update Supabase if we have a visitId
     let inserted = null
-    try {
-      inserted = await supabaseService.insertRecording({
-        table: process.env.SUPABASE_RECORDINGS_TABLE || 'call_recordings',
-        callId,
-        googleDriveFileId: fileId,
-        recordingUrl: previewUrl,
-        createdAt: new Date().toISOString()
-      })
-    } catch (dbErr) {
-      logger.warn('Failed to insert recording metadata to Supabase (non-fatal)', dbErr && dbErr.message ? dbErr.message : dbErr)
+    if (visitId) {
+      try {
+        const supabase = createClient(
+          process.env.VITE_SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        )
+        const { data, error } = await supabase
+          .from('visits')
+          .update({
+            audio_url: previewUrl,
+            audio_file_id: fileId
+          })
+          .eq('id', visitId)
+          .select()
+          
+        if (error) throw error
+        inserted = data
+      } catch (dbErr) {
+        console.warn('Failed to update visit with audio URL', dbErr)
+      }
     }
+
+    // Clean up tmp file
+    await fs.promises.unlink(filePath).catch(console.error)
 
     return res.status(200).json({ success: true, fileId, url: previewUrl, supabase: inserted })
   } catch (err) {
-    logger.error('upload-call unexpected error', err && err.message ? err.message : err)
+    console.error('Upload error', err)
     return res.status(err.status || 500).json({ success: false, error: err.message || 'Internal error' })
   }
 }

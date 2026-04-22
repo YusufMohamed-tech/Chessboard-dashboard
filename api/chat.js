@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     const apiMessages = [contextMessage, ...messages]
 
     const response = await openai.chat.completions.create({
-      model: 'openrouter/free',
+      model: 'google/gemma-3-27b-it:free',
       messages: apiMessages,
       temperature: 0.2,
       max_tokens: 1000,

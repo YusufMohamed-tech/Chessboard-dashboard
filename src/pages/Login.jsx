@@ -75,10 +75,10 @@ export default function Login({ onLogin }) {
             alt="Chessboard"
             className="mx-auto h-24 w-24 object-contain rounded-2xl shadow-lg"
           />
-          <h1 className="mt-6 font-display text-5xl font-black leading-[1.32] text-cb-gray-900 max-md:text-4xl max-md:leading-[1.4]">
+          <h1 className="mt-6 font-display text-5xl font-bold leading-[1.32] text-cb-gray-900 max-md:text-4xl max-md:leading-[1.4]">
             نظام المتحري الخفي
           </h1>
-          <p className="mt-2 text-sm font-semibold text-cb-lime-dark tracking-wide">MYSTERY SHOPPER PLATFORM</p>
+          <p className="mt-2 text-sm font-bold text-cb-lime-dark tracking-wide">المنصة الإلكترونية للتقييم الميداني</p>
           <p className="mt-3 text-lg leading-relaxed text-cb-gray-500">اختر دورك للدخول إلى النظام</p>
         </section>
 
@@ -94,7 +94,7 @@ export default function Login({ onLogin }) {
             <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-cb-gray-800 text-white shadow-sm transition group-hover:bg-cb-gray-900">
               <ClipboardCheck className="h-10 w-10" />
             </span>
-            <h2 className="mt-5 text-4xl font-black text-cb-gray-900 max-md:text-3xl">وكيل ميداني</h2>
+            <h2 className="mt-5 text-4xl font-bold text-cb-gray-900 max-md:text-3xl">وكيل ميداني</h2>
             <p className="mt-2 text-base text-cb-gray-500">تنفيذ الزيارات وإعداد التقييمات</p>
           </button>
 
@@ -108,7 +108,7 @@ export default function Login({ onLogin }) {
             <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-cb-lime text-white shadow-sm transition group-hover:bg-cb-lime-dark">
               <LayoutGrid className="h-10 w-10" />
             </span>
-            <h2 className="mt-5 text-4xl font-black text-cb-gray-900 max-md:text-3xl">مدير النظام</h2>
+            <h2 className="mt-5 text-4xl font-bold text-cb-gray-900 max-md:text-3xl">مدير النظام</h2>
             <p className="mt-2 text-base text-cb-gray-500">إدارة المشاريع والفرق ومتابعة الأداء</p>
           </button>
         </section>
@@ -117,7 +117,7 @@ export default function Login({ onLogin }) {
         {portal && (
           <section className="mx-auto mt-6 w-full max-w-2xl rounded-3xl border border-cb-gray-200 bg-white p-6 shadow-sm animate-fade-in-up">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-display text-2xl font-black text-cb-gray-900">تسجيل الدخول</h3>
+              <h3 className="font-display text-2xl font-bold text-cb-gray-900">تسجيل الدخول</h3>
               <span className="inline-flex items-center rounded-full border border-cb-gray-200 bg-cb-gray-50 px-3 py-1 text-sm font-bold text-cb-gray-700">
                 {isShopperPortal ? 'وكيل ميداني' : 'مدير النظام'}
               </span>
@@ -202,7 +202,7 @@ export default function Login({ onLogin }) {
         <div className="mt-6 text-center">
           <span className="inline-flex items-center rounded-full border border-cb-gray-200 bg-white px-4 py-2 text-sm font-semibold text-cb-gray-500">
             <ShieldCheck className="me-2 h-4 w-4" />
-            All Rights Reserved — Chessboard © 2026
+            جميع الحقوق محفوظة — Chessboard © 2026
           </span>
         </div>
       </div>

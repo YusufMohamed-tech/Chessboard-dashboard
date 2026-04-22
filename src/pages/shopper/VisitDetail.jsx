@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Info, Square, SquareCheckBig } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useOutletContext, useParams } from 'react-router-dom'
+import { uploadAudioFile } from '../../services/driveService'
 import { ErrorState, LoadingState } from '../../components/DataState'
 import PointsBadge from '../../components/PointsBadge'
 import StatusBadge from '../../components/StatusBadge'
@@ -33,6 +34,7 @@ export default function VisitDetail({ fromCompleted = false }) {
   })
 
   const [generalNotes, setGeneralNotes] = useState(visit?.notes ?? '')
+  const [audioFile, setAudioFile] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -52,8 +54,14 @@ export default function VisitDetail({ fromCompleted = false }) {
     if (submitting) return
     setSubmitting(true)
     try {
+      if (audioFile) {
+        // Upload audio first, which will also attach it to the Supabase row if configured
+        await uploadAudioFile(audioFile, visit.id)
+      }
       await completeVisit(visit.id, { scores, notes: generalNotes, categoryNotes })
       setSubmitted(true)
+    } catch (err) {
+      alert('حدث خطأ أثناء الإرسال: ' + err.message)
     } finally {
       setSubmitting(false)
     }
@@ -184,14 +192,35 @@ export default function VisitDetail({ fromCompleted = false }) {
         )
       })}
 
-      {/* General notes */}
+      {/* General notes & Audio */}
       <section className="rounded-xl border border-cb-gray-200 bg-white p-4 shadow-sm">
-        <h3 className="font-display text-xl font-black text-cb-gray-900 mb-3">📝 ملاحظات عامة</h3>
+        <h3 className="font-display text-xl font-black text-cb-gray-900 mb-3">📝 ملاحظات عامة ومرفقات</h3>
+        
         {isCompleted ? (
-          <p className="rounded-xl bg-cb-gray-50 p-3 text-sm text-cb-gray-600">{visit.notes || 'لا توجد ملاحظات'}</p>
+          <div className="space-y-4">
+            <p className="rounded-xl bg-cb-gray-50 p-3 text-sm text-cb-gray-600">{visit.notes || 'لا توجد ملاحظات'}</p>
+            {visit.audioUrl && (
+              <div className="rounded-xl border border-cb-gray-200 p-3">
+                <p className="text-sm font-bold text-cb-gray-700 mb-2">التسجيل الصوتي المرفق</p>
+                <audio controls src={visit.audioUrl} className="w-full h-10" />
+              </div>
+            )}
+          </div>
         ) : (
-          <textarea value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} rows={4} placeholder="اكتب ملاحظاتك العامة عن الزيارة..."
-            className="w-full rounded-xl border border-cb-gray-300 bg-white p-3 text-sm outline-none focus:border-cb-lime focus:ring-2 focus:ring-cb-lime-200" />
+          <div className="space-y-4">
+            <textarea value={generalNotes} onChange={(e) => setGeneralNotes(e.target.value)} rows={4} placeholder="اكتب ملاحظاتك العامة عن الزيارة..."
+              className="w-full rounded-xl border border-cb-gray-300 bg-white p-3 text-sm outline-none focus:border-cb-lime focus:ring-2 focus:ring-cb-lime-200" />
+            
+            <div className="rounded-xl border border-cb-gray-200 p-3 bg-cb-gray-50">
+              <label className="block text-sm font-bold text-cb-gray-700 mb-2">إرفاق تسجيل صوتي للزيارة (اختياري)</label>
+              <input 
+                type="file" 
+                accept="audio/*" 
+                onChange={(e) => setAudioFile(e.target.files[0])}
+                className="block w-full text-sm text-cb-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cb-lime-light file:text-cb-lime-dark hover:file:bg-cb-lime transition"
+              />
+            </div>
+          </div>
         )}
       </section>
 

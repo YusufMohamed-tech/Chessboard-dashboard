@@ -112,7 +112,10 @@ export default function LocationPicker({ locations = [], value, onChange, placeh
                     <button
                       key={`${loc.name}-${loc.brand}-${i}`}
                       type="button"
-                      onClick={() => handleSelect(loc)}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        handleSelect(loc)
+                      }}
                       className={`w-full text-start px-3 py-2.5 text-sm transition hover:bg-cb-lime-50 ${
                         selected?.name === loc.name && selected?.city === loc.city ? 'bg-cb-lime-50 border-s-2 border-cb-lime' : ''
                       }`}

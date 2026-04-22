@@ -104,7 +104,10 @@ export default function CustomSelect({
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => handleSelect(opt.value)}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      handleSelect(opt.value)
+                    }}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition text-start ${
                       isSelected ? 'bg-cb-lime-50 text-cb-lime font-bold' : 'text-cb-gray-700 hover:bg-cb-gray-50'
                     }`}

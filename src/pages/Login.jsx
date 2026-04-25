@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ClipboardCheck, LayoutGrid, LogIn, ShieldCheck, Eye, EyeOff } from 'lucide-react'
+import { ClipboardCheck, LayoutGrid, LogIn, ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function Login({ onLogin }) {
   const navigate = useNavigate()
@@ -9,7 +9,7 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showCredentials, setShowCredentials] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const isShopperPortal = portal === 'shopper'
   const isManagerPortal = portal === 'manager'
@@ -21,49 +21,41 @@ export default function Login({ onLogin }) {
     setError('')
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!portal) return
+    if (!portal || loading) return
 
-    const user = onLogin(email, password, { commit: false })
+    setError('')
+    setLoading(true)
 
-    if (!user) {
-      setError('بيانات الدخول غير صحيحة. يرجى المحاولة مرة أخرى.')
-      return
+    try {
+      const user = await onLogin(email, password)
+
+      if (!user) {
+        setError('بيانات الدخول غير صحيحة. يرجى المحاولة مرة أخرى.')
+        return
+      }
+
+      if (isShopperPortal && user.role !== 'shopper') {
+        setError('هذا الحساب ليس حساب وكيل ميداني.')
+        return
+      }
+
+      if (isManagerPortal && user.role === 'shopper') {
+        setError('هذا الحساب ليس حساب إداري.')
+        return
+      }
+
+      if (user.role === 'superadmin') navigate('/superadmin/overview', { replace: true })
+      else if (user.role === 'admin') navigate('/admin/overview', { replace: true })
+      else if (user.role === 'ops') navigate('/ops/overview', { replace: true })
+      else navigate('/shopper/dashboard', { replace: true })
+    } catch (err) {
+      setError(err.message || 'بيانات الدخول غير صحيحة. يرجى المحاولة مرة أخرى.')
+    } finally {
+      setLoading(false)
     }
-
-    if (isShopperPortal && user.role !== 'shopper') {
-      setError('هذا الحساب ليس حساب وكيل ميداني.')
-      return
-    }
-
-    if (isManagerPortal && user.role === 'shopper') {
-      setError('هذا الحساب ليس حساب إداري.')
-      return
-    }
-
-    const committedUser = onLogin(email, password, { commit: true })
-    if (!committedUser) {
-      setError('تعذر إتمام تسجيل الدخول.')
-      return
-    }
-
-    if (committedUser.role === 'superadmin') navigate('/superadmin/overview', { replace: true })
-    else if (committedUser.role === 'admin') navigate('/admin/overview', { replace: true })
-    else if (committedUser.role === 'ops') navigate('/ops/overview', { replace: true })
-    else navigate('/shopper/dashboard', { replace: true })
   }
-
-  const demoAccounts = [
-    { role: 'سوبر أدمن', email: 'admin@chessboard.sa', password: 'demo2026', brand: '' },
-    { role: 'مدير - ريدبول + موبايلي', email: 'manager@chessboard.sa', password: 'demo2026', brand: '🔴🟣' },
-    { role: 'مدير - موبايلي', email: 'mobily@chessboard.sa', password: 'demo2026', brand: '🟣' },
-    { role: 'مدير - سلام موبايل', email: 'salam@chessboard.sa', password: 'demo2026', brand: '🔵' },
-    { role: 'مدير - ليبارا', email: 'lebara@chessboard.sa', password: 'demo2026', brand: '🟢' },
-    { role: 'مدير - فيرجن', email: 'virgin@chessboard.sa', password: 'demo2026', brand: '🔴' },
-    { role: 'عمليات', email: 'ops@chessboard.sa', password: 'demo2026', brand: '' },
-    { role: 'وكيل ميداني', email: 'agent@chessboard.sa', password: 'demo2026', brand: '' },
-  ]
 
   return (
     <div className="min-h-screen bg-cb-gray-50 px-4 py-10">
@@ -132,7 +124,8 @@ export default function Login({ onLogin }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="example@chessboard.sa"
-                  className="h-12 w-full rounded-xl border border-cb-gray-300 bg-white px-4 text-cb-gray-800 outline-none transition focus:border-cb-lime focus:ring-2 focus:ring-cb-lime-200"
+                  disabled={loading}
+                  className="h-12 w-full rounded-xl border border-cb-gray-300 bg-white px-4 text-cb-gray-800 outline-none transition focus:border-cb-lime focus:ring-2 focus:ring-cb-lime-200 disabled:opacity-60"
                 />
               </div>
 
@@ -145,7 +138,8 @@ export default function Login({ onLogin }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-12 w-full rounded-xl border border-cb-gray-300 bg-white pe-12 ps-4 text-cb-gray-800 outline-none transition focus:border-cb-lime focus:ring-2 focus:ring-cb-lime-200"
+                    disabled={loading}
+                    className="h-12 w-full rounded-xl border border-cb-gray-300 bg-white pe-12 ps-4 text-cb-gray-800 outline-none transition focus:border-cb-lime focus:ring-2 focus:ring-cb-lime-200 disabled:opacity-60"
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute end-3 top-1/2 -translate-y-1/2 text-cb-gray-400 hover:text-cb-gray-600">
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -161,41 +155,22 @@ export default function Login({ onLogin }) {
 
               <button
                 type="submit"
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cb-lime text-base font-bold text-white transition hover:bg-cb-lime-dark"
+                disabled={loading}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cb-lime text-base font-bold text-white transition hover:bg-cb-lime-dark disabled:opacity-60"
               >
-                <LogIn className="h-4 w-4" />
-                دخول المنصة
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري تسجيل الدخول...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-4 w-4" />
+                    دخول المنصة
+                  </>
+                )}
               </button>
             </form>
-
-            {/* Demo credentials hint */}
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => setShowCredentials(!showCredentials)}
-                className="text-xs font-semibold text-cb-gray-400 hover:text-cb-gray-600 transition"
-              >
-                {showCredentials ? 'إخفاء بيانات العرض التجريبي' : '🔑 عرض بيانات الدخول التجريبية'}
-              </button>
-              {showCredentials && (
-                <div className="mt-2 rounded-xl border border-cb-lime-200 bg-cb-lime-50 p-3 text-xs animate-fade-in">
-                  <p className="font-bold text-cb-lime-700 mb-2">حسابات العرض التجريبي:</p>
-                  <div className="grid gap-1">
-                    {demoAccounts.map((acc) => (
-                      <button
-                        key={acc.email}
-                        type="button"
-                        onClick={() => { setEmail(acc.email); setPassword(acc.password) }}
-                        className="flex items-center justify-between rounded-lg bg-white px-2 py-1.5 text-cb-gray-700 hover:bg-cb-lime-100 transition text-start"
-                      >
-                        <span className="font-bold">{acc.role}</span>
-                        <span className="text-cb-gray-500" dir="ltr">{acc.email}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
           </section>
         )}
 

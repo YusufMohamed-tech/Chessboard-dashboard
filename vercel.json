@@ -1,9 +1,12 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install --legacy-peer-deps",
+  "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
+    { "source": "/api/auth/:path*", "destination": "/api/auth/:path*" },
+    { "source": "/api/profiles/:path*", "destination": "/api/profiles/:path*" },
+    { "source": "/api/visits/:path*", "destination": "/api/visits/:path*" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

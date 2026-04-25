@@ -1,19 +1,10 @@
-import { Suspense, lazy, useMemo, useState, useCallback } from 'react'
+import { Suspense, lazy, useMemo, useState, useCallback, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { calculateWeightedScore, ALL_QUESTION_KEYS, calculatePercentage } from './utils/scoring'
-import {
-  DEMO_CREDENTIALS,
-  BRANDS,
-  mockAdmins,
-  mockShoppers as initialShoppers,
-  mockVisits as initialVisits,
-  mockIssues as initialIssues,
-  mockNotifications as initialNotifications,
-  mockOffices,
-  mockEvaluationCriteria,
-  mockPointsRules,
-} from './data/mockData'
+import { BRANDS, POINTS_RULES, EVALUATION_CRITERIA, AUTH_STORAGE_KEY, TOKEN_STORAGE_KEY } from './config/constants'
 import { locationDatabase } from './data/locations'
+import * as authService from './services/authService'
+import * as dataService from './services/dataService'
 
 const Login = lazy(() => import('./pages/Login'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
@@ -33,18 +24,7 @@ const SuperAdminOverview = lazy(() => import('./pages/superadmin/Overview'))
 const ManageAdmins = lazy(() => import('./pages/superadmin/ManageAdmins'))
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'))
 
-const AUTH_STORAGE_KEY = 'cb-mystery-auth'
 const SHOW_POINTS_SECTION = true
-
-const SUPER_ADMIN_ACCOUNT = {
-  id: 'superadmin-root',
-  name: DEMO_CREDENTIALS.superadmin.name,
-  email: DEMO_CREDENTIALS.superadmin.email,
-  personalEmail: DEMO_CREDENTIALS.superadmin.email,
-  password: DEMO_CREDENTIALS.superadmin.password,
-  role: 'superadmin',
-}
-
 const RIYADH_TIME_ZONE = 'Asia/Riyadh'
 const RIYADH_UTC_OFFSET = '+03:00'
 
@@ -61,51 +41,32 @@ function normalizeEmail(value) {
 }
 
 function toArabicUserStatus(value) {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  return normalized === 'active' || normalized === 'نشط' ? 'نشط' : 'غير نشط'
+  const n = String(value ?? '').trim().toLowerCase()
+  return n === 'active' || n === 'نشط' ? 'نشط' : 'غير نشط'
 }
 
 function toDbUserStatus(value) {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  return normalized === 'active' || normalized === 'نشط' ? 'active' : 'inactive'
+  const n = String(value ?? '').trim().toLowerCase()
+  return n === 'active' || n === 'نشط' ? 'active' : 'inactive'
 }
 
-function normalizeAdminRole(value) {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  if (['superadmin', 'super_admin'].includes(normalized)) return 'superadmin'
-  if (['ops', 'operations'].includes(normalized)) return 'ops'
-  if (['admin', 'subadmin'].includes(normalized)) return 'admin'
-  return normalized || 'admin'
-}
-
-function mapAdminRow(row) {
+// Map DB row → frontend profile shape
+function mapProfileRow(row) {
   return {
     id: row.id,
     name: row.name ?? '',
     email: normalizeEmail(row.email),
-    personalEmail: normalizeEmail(row.personal_email ?? row.email ?? ''),
-    password: row.password ?? '',
-    city: row.city ?? '',
-    status: toArabicUserStatus(row.status),
-    role: normalizeAdminRole(row.role),
-    assignedBrands: Array.isArray(row.assignedBrands) ? row.assignedBrands : [],
-  }
-}
-
-function mapShopperRow(row) {
-  return {
-    id: row.id,
-    name: row.name ?? '',
-    email: normalizeEmail(row.email),
-    personalEmail: normalizeEmail(row.personal_email ?? row.email ?? ''),
-    password: row.password ?? '',
+    personalEmail: normalizeEmail(row.personal_email ?? ''),
     city: row.city ?? '',
     primaryPhone: row.primary_phone ?? '',
     whatsappPhone: row.whatsapp_phone ?? '',
     status: toArabicUserStatus(row.status),
+    role: row.role ?? 'shopper',
+    assignedBrands: Array.isArray(row.assigned_brands) ? row.assigned_brands : [],
+    assignedAdminId: row.assigned_admin_id ?? null,
     visits: Number(row.visits_completed ?? 0),
     points: Number(row.points ?? 0),
-    assignedAdminId: row.assigned_admin_id ?? null,
+    isRoot: Boolean(row.is_root),
   }
 }
 
@@ -133,6 +94,7 @@ function formatVisitTime(visitDate) {
   return hour24 >= 12 ? 'مسائية' : 'صباحية'
 }
 
+// Map DB row → frontend visit shape
 function mapVisitRow(row) {
   return {
     id: row.id,
@@ -160,6 +122,9 @@ function mapIssueRow(row) {
     severity: row.severity,
     description: row.description,
     createdAt: row.created_at,
+    officeName: row.officeName ?? '',
+    city: row.city ?? '',
+    date: row.date ?? '',
   }
 }
 
@@ -180,37 +145,6 @@ function mapNotificationRow(row) {
   }
 }
 
-function mapPointsRules(rows) {
-  const next = { visits: [], issues: [], quality: [], achievements: [] }
-  rows.forEach((row) => {
-    if (!next[row.category]) return
-    next[row.category].push({ label: row.condition, points: Number(row.points ?? 0) })
-  })
-  return next
-}
-
-function makeEmptyScores() {
-  const obj = {}
-  ALL_QUESTION_KEYS.forEach((k) => { obj[k] = 0 })
-  return obj
-}
-
-function getGeneratedIssues(scores) {
-  const pct = calculatePercentage(scores)
-  if (pct >= 80) return []
-  const severity = pct < 40 ? 'خطيرة' : pct < 60 ? 'متوسطة' : 'بسيطة'
-  // Find which categories have weak scores
-  const weakKeys = ALL_QUESTION_KEYS.filter((k) => Number(scores[k]) === 0)
-  const desc = weakKeys.length > 0
-    ? `تم رصد ${weakKeys.length} نقطة ضعف (${pct}% فقط).`
-    : `النتيجة العامة ${pct}% تحتاج تحسين.`
-  return [{ severity, description: desc }]
-}
-
-function isRootSuperAdmin(user) {
-  return user?.role === 'superadmin' && user.id === SUPER_ADMIN_ACCOUNT.id
-}
-
 function parseVisitDateTime(date, time) {
   const dateValue = String(date ?? '').trim()
   if (!dateValue) return new Date().toISOString()
@@ -224,386 +158,334 @@ function ProtectedRoute({ user, allowedRole, children }) {
   return children
 }
 
-function generateId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
-}
-
-// ─── Main App ───────────────────────────────────────────────────────────────
+// ─── Main App ───────────────────────────────────────────────
 function App() {
-  // Initialize state from mock data
-  const allAdmins = useMemo(() => mockAdmins.map(mapAdminRow), [])
-  const [subAdmins, setSubAdmins] = useState(() => allAdmins.filter((a) => a.role === 'admin'))
-  const [superAdmins, setSuperAdmins] = useState(() => allAdmins.filter((a) => a.role === 'superadmin'))
-  const [opsAdmins, setOpsAdmins] = useState(() => allAdmins.filter((a) => a.role === 'ops'))
-  const [shoppers, setShoppers] = useState(() => initialShoppers.map(mapShopperRow))
-  const [visits, setVisits] = useState(() => initialVisits.map(mapVisitRow))
-  const [issues, setIssues] = useState(() => initialIssues.map(mapIssueRow))
-  const [notifications, setNotifications] = useState(() => initialNotifications.map(mapNotificationRow))
-  const offices = useMemo(() => mockOffices.map((o) => ({ id: o.id, name: o.name, city: o.city, type: o.type, location: o.location, status: o.status })), [])
-  const evaluationCriteria = mockEvaluationCriteria
-  const pointsRules = useMemo(() => mapPointsRules(mockPointsRules), [])
+  // ─── Auth State ──────────────────────────────────────────
+  const [authUser, setAuthUser] = useState(() => authService.getStoredUser())
+  const [sessionChecked, setSessionChecked] = useState(false)
 
-  const [authUser, setAuthUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem(AUTH_STORAGE_KEY)
-      return saved ? JSON.parse(saved) : null
-    } catch { return null }
-  })
+  // ─── Data State ──────────────────────────────────────────
+  const [allProfiles, setAllProfiles] = useState([])
+  const [visits, setVisits] = useState([])
+  const [issues, setIssues] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [dataLoading, setDataLoading] = useState(false)
+  const [dataError, setDataError] = useState('')
 
-  const activeUser = useMemo(() => {
-    if (!authUser) return null
-    if (authUser.role === 'superadmin') {
-      if (isRootSuperAdmin(authUser)) {
-        return { ...authUser, role: 'superadmin', isRootSuperAdmin: true }
-      }
-      const sa = superAdmins.find((a) => a.id === authUser.id || normalizeEmail(a.email) === normalizeEmail(authUser.email))
-      return sa?.status === 'نشط' ? { ...authUser, ...sa, role: 'superadmin', isRootSuperAdmin: false } : null
-    }
-    if (authUser.role === 'admin') {
-      const a = subAdmins.find((x) => x.id === authUser.id || normalizeEmail(x.email) === normalizeEmail(authUser.email))
-      return a ? { ...authUser, ...a, role: 'admin' } : null
-    }
-    if (authUser.role === 'ops') {
-      const o = opsAdmins.find((x) => x.id === authUser.id || normalizeEmail(x.email) === normalizeEmail(authUser.email))
-      return o ? { ...authUser, ...o, role: 'ops' } : null
-    }
-    if (authUser.role === 'shopper') {
-      const s = shoppers.find((x) => x.id === authUser.id || normalizeEmail(x.email) === normalizeEmail(authUser.email))
-      return s ? { ...authUser, ...s, role: 'shopper' } : null
-    }
-    return null
-  }, [authUser, opsAdmins, shoppers, subAdmins, superAdmins])
+  // ─── Derived profile lists ───────────────────────────────
+  const mappedProfiles = useMemo(() => allProfiles.map(mapProfileRow), [allProfiles])
+  const superAdmins = useMemo(() => mappedProfiles.filter(p => p.role === 'superadmin'), [mappedProfiles])
+  const subAdmins = useMemo(() => mappedProfiles.filter(p => p.role === 'admin'), [mappedProfiles])
+  const opsAdmins = useMemo(() => mappedProfiles.filter(p => p.role === 'ops'), [mappedProfiles])
+  const shoppers = useMemo(() => mappedProfiles.filter(p => p.role === 'shopper'), [mappedProfiles])
 
-  // ─── Derived data ─────────────────────────────────────────────────────────
-  const issuesWithVisitMeta = useMemo(() => {
-    const vm = new Map(visits.map((v) => [v.id, v]))
-    return issues.map((iss) => {
-      const rv = vm.get(iss.visitId)
-      return { ...iss, officeName: rv?.officeName ?? '', city: rv?.city ?? '', date: rv?.date ?? '' }
-    })
-  }, [issues, visits])
+  // ─── Derived visit/issue data ────────────────────────────
+  const mappedVisits = useMemo(() => visits.map(mapVisitRow), [visits])
+  const mappedIssues = useMemo(() => issues.map(mapIssueRow), [issues])
+  const mappedNotifications = useMemo(() => notifications.map(mapNotificationRow), [notifications])
 
   const issuesByVisit = useMemo(() => {
     const map = new Map()
-    issuesWithVisitMeta.forEach((iss) => {
+    mappedIssues.forEach(iss => {
       const cur = map.get(iss.visitId) ?? []
       map.set(iss.visitId, [...cur, iss])
     })
     return map
-  }, [issuesWithVisitMeta])
+  }, [mappedIssues])
 
-  const visitsWithIssues = useMemo(() => visits.map((v) => ({ ...v, issues: issuesByVisit.get(v.id) ?? [] })), [issuesByVisit, visits])
+  const visitsWithIssues = useMemo(() =>
+    mappedVisits.map(v => ({ ...v, issues: issuesByVisit.get(v.id) ?? [] }))
+  , [mappedVisits, issuesByVisit])
+
+  // Active user from mappedProfiles
+  const activeUser = useMemo(() => {
+    if (!authUser) return null
+    const found = mappedProfiles.find(p => p.id === authUser.id)
+    if (found) return { ...found, isRootSuperAdmin: found.isRoot }
+    // If profile not loaded yet, use stored auth
+    return { ...authUser, isRootSuperAdmin: authUser.is_root || false }
+  }, [authUser, mappedProfiles])
 
   const scopedNotifications = useMemo(() => {
     if (!activeUser) return []
-    return notifications
-      .filter((n) => n.recipientRole === activeUser.role)
-      .filter((n) => !n.recipientUserId || n.recipientUserId === activeUser.id)
+    return mappedNotifications
+      .filter(n => n.recipientRole === activeUser.role)
+      .filter(n => !n.recipientUserId || n.recipientUserId === activeUser.id)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }, [activeUser, notifications])
+  }, [activeUser, mappedNotifications])
 
-  const unreadNotificationsCount = useMemo(() => scopedNotifications.filter((n) => !n.isRead).length, [scopedNotifications])
+  const unreadNotificationsCount = useMemo(() =>
+    scopedNotifications.filter(n => !n.isRead).length
+  , [scopedNotifications])
 
-  // ─── Auth ─────────────────────────────────────────────────────────────────
-  const handleLogin = useCallback((email, password, options = {}) => {
-    const commitSession = options.commit !== false
-    const ne = normalizeEmail(email)
+  // ─── Session Validation ──────────────────────────────────
+  useEffect(() => {
+    if (!authUser) { setSessionChecked(true); return }
+    authService.validateSession()
+      .then(user => {
+        if (!user) setAuthUser(null)
+        else setAuthUser(user)
+      })
+      .catch(() => setAuthUser(null))
+      .finally(() => setSessionChecked(true))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Root superadmin
-    if (ne === normalizeEmail(SUPER_ADMIN_ACCOUNT.email) && password === SUPER_ADMIN_ACCOUNT.password) {
-      const payload = { id: SUPER_ADMIN_ACCOUNT.id, name: SUPER_ADMIN_ACCOUNT.name, email: SUPER_ADMIN_ACCOUNT.email, role: 'superadmin' }
-      if (commitSession) { setAuthUser(payload); localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload)) }
-      return payload
+  // ─── Fetch all data when logged in ──────────────────────
+  const fetchAllData = useCallback(async () => {
+    setDataLoading(true)
+    setDataError('')
+    try {
+      const [profilesData, visitsData, issuesData, notifData] = await Promise.all([
+        dataService.fetchProfiles().catch(() => []),
+        dataService.fetchVisits().catch(() => []),
+        dataService.fetchIssues().catch(() => []),
+        dataService.fetchNotifications().catch(() => []),
+      ])
+      setAllProfiles(profilesData)
+      setVisits(visitsData)
+      setIssues(issuesData)
+      setNotifications(notifData)
+    } catch (err) {
+      setDataError('فشل في تحميل البيانات. يرجى تحديث الصفحة.')
+      console.error('Fetch all data error:', err)
+    } finally {
+      setDataLoading(false)
     }
+  }, [])
 
-    // All other users
-    const allUsers = [
-      ...superAdmins.map((u) => ({ ...u, role: 'superadmin' })),
-      ...subAdmins.map((u) => ({ ...u, role: 'admin' })),
-      ...opsAdmins.map((u) => ({ ...u, role: 'ops' })),
-      ...shoppers.map((u) => ({ ...u, role: 'shopper' })),
-    ]
+  useEffect(() => {
+    if (authUser && sessionChecked) fetchAllData()
+  }, [authUser, sessionChecked, fetchAllData])
 
-    const user = allUsers.find((u) => normalizeEmail(u.email) === ne && u.password === password && u.status === 'نشط')
-    if (!user) return null
-
-    const payload = { id: user.id, name: user.name, email: user.email, role: user.role }
-    if (commitSession) { setAuthUser(payload); localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload)) }
-    return payload
-  }, [opsAdmins, shoppers, subAdmins, superAdmins])
+  // ─── Auth ────────────────────────────────────────────────
+  const handleLogin = useCallback(async (email, password) => {
+    const user = await authService.login(email, password)
+    setAuthUser(user)
+    return user
+  }, [])
 
   const handleLogout = useCallback(() => {
+    authService.logout()
     setAuthUser(null)
-    localStorage.removeItem(AUTH_STORAGE_KEY)
+    setAllProfiles([])
+    setVisits([])
+    setIssues([])
+    setNotifications([])
   }, [])
 
-  // ─── Notification actions ─────────────────────────────────────────────────
-  const markNotificationAsRead = useCallback(async (notificationId) => {
-    setNotifications((prev) => prev.map((n) => n.id !== notificationId ? n : { ...n, isRead: true, readAt: new Date().toISOString() }))
+  // ─── Notification actions ────────────────────────────────
+  const handleMarkNotificationAsRead = useCallback(async (notificationId) => {
+    await dataService.markNotificationRead(notificationId)
+    setNotifications(prev => prev.map(n =>
+      n.id !== notificationId ? n : { ...n, is_read: true, read_at: new Date().toISOString() }
+    ))
     return true
   }, [])
 
-  const markAllNotificationsAsRead = useCallback(async () => {
+  const handleMarkAllNotificationsAsRead = useCallback(async () => {
+    await dataService.markAllNotificationsRead()
     const readAt = new Date().toISOString()
-    const ids = new Set(scopedNotifications.filter((n) => !n.isRead).map((n) => n.id))
-    setNotifications((prev) => prev.map((n) => ids.has(n.id) ? { ...n, isRead: true, readAt } : n))
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true, read_at: readAt })))
     return true
-  }, [scopedNotifications])
+  }, [])
 
-  // ─── Shopper CRUD ─────────────────────────────────────────────────────────
-  const addShopper = useCallback(async (payload) => {
-    const newShopper = mapShopperRow({
-      id: generateId('sh'), name: payload.name, email: payload.email,
-      personal_email: payload.personalEmail ?? '', password: payload.password,
-      city: payload.city, primary_phone: payload.primaryPhone ?? '',
-      whatsapp_phone: payload.whatsappPhone ?? '', status: toDbUserStatus(payload.status ?? 'نشط'),
-      visits_completed: 0, points: 0, assigned_admin_id: payload.assignedAdminId ?? null,
+  // ─── Profile CRUD (SuperAdmin) ───────────────────────────
+  const addProfile = useCallback(async (role, payload) => {
+    const newProfile = await dataService.createProfile({
+      name: payload.name,
+      email: payload.email,
+      password: payload.password,
+      personalEmail: payload.personalEmail ?? '',
+      role,
+      city: payload.city ?? '',
+      primaryPhone: payload.primaryPhone ?? '',
+      whatsappPhone: payload.whatsappPhone ?? '',
+      status: toDbUserStatus(payload.status ?? 'نشط'),
+      assignedBrands: payload.assignedBrands ?? [],
+      assignedAdminId: payload.assignedAdminId ?? null,
     })
-    setShoppers((prev) => [newShopper, ...prev])
-    return newShopper
+    setAllProfiles(prev => [newProfile, ...prev])
+    return mapProfileRow(newProfile)
   }, [])
 
-  const updateShopper = useCallback(async (shopperId, updates) => {
-    let updated = null
-    setShoppers((prev) => prev.map((s) => {
-      if (s.id !== shopperId) return s
-      updated = {
-        ...s,
-        name: updates.name ?? s.name, email: updates.email ? normalizeEmail(updates.email) : s.email,
-        personalEmail: updates.personalEmail !== undefined ? normalizeEmail(updates.personalEmail) : s.personalEmail,
-        password: updates.password ?? s.password, city: updates.city ?? s.city,
-        primaryPhone: updates.primaryPhone ?? s.primaryPhone, whatsappPhone: updates.whatsappPhone ?? s.whatsappPhone,
-        status: updates.status ? toArabicUserStatus(updates.status) : s.status,
-      }
-      return updated
-    }))
-    return updated
+  const updateProfileById = useCallback(async (id, updates) => {
+    const apiUpdates = {}
+    if (updates.name !== undefined) apiUpdates.name = updates.name
+    if (updates.email !== undefined) apiUpdates.email = updates.email
+    if (updates.password !== undefined) apiUpdates.password = updates.password
+    if (updates.personalEmail !== undefined) apiUpdates.personalEmail = updates.personalEmail
+    if (updates.city !== undefined) apiUpdates.city = updates.city
+    if (updates.primaryPhone !== undefined) apiUpdates.primaryPhone = updates.primaryPhone
+    if (updates.whatsappPhone !== undefined) apiUpdates.whatsappPhone = updates.whatsappPhone
+    if (updates.status !== undefined) apiUpdates.status = toDbUserStatus(updates.status)
+    if (updates.assignedBrands !== undefined) apiUpdates.assignedBrands = updates.assignedBrands
+    if (updates.assignedAdminId !== undefined) apiUpdates.assignedAdminId = updates.assignedAdminId
+
+    const updated = await dataService.updateProfile(id, apiUpdates)
+    setAllProfiles(prev => prev.map(p => p.id === id ? updated : p))
+    return mapProfileRow(updated)
   }, [])
 
-  const updateShopperStatus = useCallback(async (shopperId, newStatus) => {
-    setShoppers((prev) => prev.map((s) => s.id !== shopperId ? s : { ...s, status: toArabicUserStatus(newStatus) }))
+  const deleteProfileById = useCallback(async (id) => {
+    await dataService.deleteProfile(id)
+    setAllProfiles(prev => prev.filter(p => p.id !== id))
     return true
   }, [])
 
-  const deleteShopper = useCallback(async (shopperId) => {
-    setShoppers((prev) => prev.filter((s) => s.id !== shopperId))
-    return true
-  }, [])
+  // Convenience wrappers matching existing API signatures
+  const addSuperAdmin = useCallback(async (p) => addProfile('superadmin', p), [addProfile])
+  const addOpsAdmin = useCallback(async (p) => addProfile('ops', p), [addProfile])
+  const addSubAdmin = useCallback(async (p) => addProfile('admin', p), [addProfile])
+  const addShopper = useCallback(async (p) => addProfile('shopper', p), [addProfile])
 
-  const awardShopperPoints = useCallback(async (shopperId, points, reason) => {
-    setShoppers((prev) => prev.map((s) => s.id !== shopperId ? s : { ...s, points: s.points + points }))
-    return true
-  }, [])
+  const updateSuperAdmin = useCallback(async (id, u) => updateProfileById(id, u), [updateProfileById])
+  const updateOpsAdmin = useCallback(async (id, u) => updateProfileById(id, u), [updateProfileById])
+  const updateSubAdmin = useCallback(async (id, u) => updateProfileById(id, u), [updateProfileById])
+  const updateShopper = useCallback(async (id, u) => updateProfileById(id, u), [updateProfileById])
+  const updateShopperStatus = useCallback(async (id, s) => updateProfileById(id, { status: s }), [updateProfileById])
 
-  // ─── Visit CRUD ───────────────────────────────────────────────────────────
+  const deleteSuperAdmin = useCallback(async (id) => deleteProfileById(id), [deleteProfileById])
+  const deleteOpsAdmin = useCallback(async (id) => deleteProfileById(id), [deleteProfileById])
+  const deleteSubAdmin = useCallback(async (id) => deleteProfileById(id), [deleteProfileById])
+  const deleteShopper = useCallback(async (id) => deleteProfileById(id), [deleteProfileById])
+
+  const awardShopperPoints = useCallback(async (shopperId, points) => {
+    const shopper = allProfiles.find(p => p.id === shopperId)
+    if (!shopper) return false
+    await dataService.updateProfile(shopperId, { points: (shopper.points || 0) + points })
+    setAllProfiles(prev => prev.map(p =>
+      p.id === shopperId ? { ...p, points: (p.points || 0) + points } : p
+    ))
+    return true
+  }, [allProfiles])
+
+  // ─── Visit CRUD ──────────────────────────────────────────
   const addVisit = useCallback(async (payload) => {
-    const newVisitRow = {
-      id: generateId('v'), office_name: payload.officeName, city: payload.city,
-      type: payload.type || 'تقييم شامل', status: payload.status || 'معلقة',
-      scenario: payload.scenario ?? '', membership_id: `CB-${Math.floor(10000 + Math.random() * 90000)}`,
-      shopper_id: payload.assignedShopperId || null,
-      visit_date: parseVisitDateTime(payload.date, payload.time),
-      scores: {}, notes: '', points_earned: 0, file_urls: [],
-    }
-    const mapped = mapVisitRow(newVisitRow)
-    setVisits((prev) => [mapped, ...prev])
-
-    // Add notification
-    const nid = generateId('n')
-    setNotifications((prev) => [{
-      id: nid, recipientRole: 'superadmin', recipientUserId: null, recipientEmail: '',
-      title: 'تم إنشاء زيارة جديدة', description: `تم إنشاء زيارة جديدة (${payload.officeName} - ${payload.city})`,
-      eventType: 'visit_created', visitId: mapped.id, payload: {}, isRead: false, readAt: null,
-      createdAt: new Date().toISOString(),
-    }, ...prev])
-
-    return mapped
+    const newVisit = await dataService.createVisit({
+      officeName: payload.officeName,
+      city: payload.city,
+      type: payload.type || 'تقييم شامل',
+      brand: payload.brand || '',
+      status: payload.status || 'معلقة',
+      scenario: payload.scenario ?? '',
+      shopperId: payload.assignedShopperId || null,
+      visitDate: parseVisitDateTime(payload.date, payload.time),
+    })
+    setVisits(prev => [newVisit, ...prev])
+    return mapVisitRow(newVisit)
   }, [])
 
   const updateVisit = useCallback(async (visitId, updates) => {
-    let updated = null
-    setVisits((prev) => prev.map((v) => {
-      if (v.id !== visitId) return v
-      updated = {
-        ...v,
-        officeName: updates.officeName ?? v.officeName, city: updates.city ?? v.city,
-        type: updates.type ?? v.type, status: updates.status ?? v.status,
-        scenario: updates.scenario ?? v.scenario,
-        date: updates.date ?? v.date, time: updates.time ?? v.time,
-        assignedShopperId: updates.assignedShopperId !== undefined ? updates.assignedShopperId : v.assignedShopperId,
-      }
-      return updated
-    }))
-    return updated
-  }, [])
+    const apiUpdates = {}
+    if (updates.officeName !== undefined) apiUpdates.officeName = updates.officeName
+    if (updates.city !== undefined) apiUpdates.city = updates.city
+    if (updates.type !== undefined) apiUpdates.type = updates.type
+    if (updates.brand !== undefined) apiUpdates.brand = updates.brand
+    if (updates.status !== undefined) apiUpdates.status = updates.status
+    if (updates.scenario !== undefined) apiUpdates.scenario = updates.scenario
+    if (updates.assignedShopperId !== undefined) apiUpdates.shopperId = updates.assignedShopperId
+    if (updates.date !== undefined || updates.time !== undefined) {
+      const existing = visits.find(v => v.id === visitId)
+      apiUpdates.visitDate = parseVisitDateTime(
+        updates.date ?? formatVisitDate(existing?.visit_date),
+        updates.time ?? formatVisitTime(existing?.visit_date)
+      )
+    }
 
-  const deleteVisit = useCallback(async (visitId) => {
-    const target = visits.find((v) => v.id === visitId)
-    if (!target) return false
+    const updated = await dataService.updateVisit(visitId, apiUpdates)
+    setVisits(prev => prev.map(v => v.id === visitId ? updated : v))
+    return mapVisitRow(updated)
+  }, [visits])
 
-    if (activeUser?.role === 'ops' && target.status !== 'جاري المسح') {
-      setVisits((prev) => prev.map((v) => v.id !== visitId ? v : { ...v, status: 'جاري المسح' }))
+  const deleteVisitAction = useCallback(async (visitId) => {
+    const result = await dataService.deleteVisit(visitId)
+    if (result.requested) {
+      setVisits(prev => prev.map(v => v.id === visitId ? { ...v, status: 'جاري المسح' } : v))
       return 'requested'
     }
-
-    setVisits((prev) => prev.filter((v) => v.id !== visitId))
-    setIssues((prev) => prev.filter((i) => i.visitId !== visitId))
+    setVisits(prev => prev.filter(v => v.id !== visitId))
+    setIssues(prev => prev.filter(i => i.visit_id !== visitId))
     return true
-  }, [activeUser, visits])
+  }, [])
 
   const completeVisit = useCallback(async (visitId, payload) => {
-    const target = visits.find((v) => v.id === visitId)
-    if (!target) return null
+    const result = await dataService.completeVisit(visitId, payload.scores, payload.notes)
+    // Re-fetch data to get updated visits, issues, profiles
+    await fetchAllData()
+    return result.pointsEarned
+  }, [fetchAllData])
 
-    const finalScore = calculateWeightedScore(payload.scores)
-    const generatedIssues = getGeneratedIssues(payload.scores)
-    const pointsEarned = Math.round(calculatePercentage(payload.scores) * 1.2 + generatedIssues.length * 10)
+  // ─── Scope props ─────────────────────────────────────────
+  const evaluationCriteria = EVALUATION_CRITERIA
+  const pointsRules = POINTS_RULES
 
-    setVisits((prev) => prev.map((v) => v.id !== visitId ? v : {
-      ...v, status: 'مكتملة', scores: payload.scores, notes: payload.notes, pointsEarned,
-    }))
-
-    if (target.assignedShopperId) {
-      setShoppers((prev) => prev.map((s) => s.id !== target.assignedShopperId ? s : {
-        ...s, visits: s.visits + 1, points: s.points + pointsEarned,
-      }))
-    }
-
-    // Replace issues for this visit
-    setIssues((prev) => {
-      const remaining = prev.filter((i) => i.visitId !== visitId)
-      const newIssues = generatedIssues.map((gi, idx) => ({
-        id: generateId('iss'), visitId, severity: gi.severity,
-        description: gi.description, createdAt: new Date().toISOString(),
-      }))
-      return [...remaining, ...newIssues]
-    })
-
-    return pointsEarned
-  }, [visits, evaluationCriteria])
-
-  // ─── Admin CRUD (SuperAdmin) ──────────────────────────────────────────────
-  const canManageSuperAdmins = isRootSuperAdmin(activeUser)
+  const canManageSuperAdmins = activeUser?.isRootSuperAdmin === true
   const canManageOpsAdmins = activeUser?.role === 'superadmin'
 
-  const addSuperAdmin = useCallback(async (payload) => {
-    const newAdmin = mapAdminRow({ id: generateId('sa'), name: payload.name, email: payload.email, personal_email: payload.personalEmail ?? '', password: payload.password, city: payload.city, status: toDbUserStatus(payload.status), role: 'superadmin' })
-    setSuperAdmins((prev) => [newAdmin, ...prev])
-    return newAdmin
-  }, [])
-
-  const updateSuperAdmin = useCallback(async (id, updates) => {
-    let updated = null
-    setSuperAdmins((prev) => prev.map((a) => {
-      if (a.id !== id) return a
-      updated = { ...a, name: updates.name ?? a.name, email: updates.email ? normalizeEmail(updates.email) : a.email, password: updates.password ?? a.password, city: updates.city ?? a.city, status: updates.status ? toArabicUserStatus(updates.status) : a.status }
-      return updated
-    }))
-    return updated
-  }, [])
-
-  const deleteSuperAdmin = useCallback(async (id) => {
-    setSuperAdmins((prev) => prev.filter((a) => a.id !== id))
-    return true
-  }, [])
-
-  const addOpsAdmin = useCallback(async (payload) => {
-    const newAdmin = mapAdminRow({ id: generateId('ops'), name: payload.name, email: payload.email, personal_email: payload.personalEmail ?? '', password: payload.password, city: payload.city, status: toDbUserStatus(payload.status), role: 'ops' })
-    setOpsAdmins((prev) => [newAdmin, ...prev])
-    return newAdmin
-  }, [])
-
-  const updateOpsAdmin = useCallback(async (id, updates) => {
-    let updated = null
-    setOpsAdmins((prev) => prev.map((a) => {
-      if (a.id !== id) return a
-      updated = { ...a, name: updates.name ?? a.name, email: updates.email ? normalizeEmail(updates.email) : a.email, password: updates.password ?? a.password, city: updates.city ?? a.city, status: updates.status ? toArabicUserStatus(updates.status) : a.status }
-      return updated
-    }))
-    return updated
-  }, [])
-
-  const deleteOpsAdmin = useCallback(async (id) => {
-    setOpsAdmins((prev) => prev.filter((a) => a.id !== id))
-    return true
-  }, [])
-
-  const addSubAdmin = useCallback(async (payload) => {
-    const newAdmin = mapAdminRow({ id: generateId('admin'), name: payload.name, email: payload.email, personal_email: payload.personalEmail ?? '', password: payload.password, city: payload.city, status: toDbUserStatus(payload.status), role: 'admin' })
-    setSubAdmins((prev) => [newAdmin, ...prev])
-    return newAdmin
-  }, [])
-
-  const updateSubAdmin = useCallback(async (id, updates) => {
-    let updated = null
-    setSubAdmins((prev) => prev.map((a) => {
-      if (a.id !== id) return a
-      updated = { ...a, name: updates.name ?? a.name, email: updates.email ? normalizeEmail(updates.email) : a.email, password: updates.password ?? a.password, city: updates.city ?? a.city, status: updates.status ? toArabicUserStatus(updates.status) : a.status }
-      return updated
-    }))
-    return updated
-  }, [])
-
-  const deleteSubAdmin = useCallback(async (id) => {
-    setSubAdmins((prev) => prev.filter((a) => a.id !== id))
-    return true
-  }, [])
-
-  // ─── Scope props ──────────────────────────────────────────────────────────
   const baseProps = {
-    offices, evaluationCriteria, pointsRules, locationDatabase, brands: BRANDS,
+    offices: [], evaluationCriteria, pointsRules, locationDatabase, brands: BRANDS,
     notifications: scopedNotifications, notificationsEnabled: true,
-    unreadNotificationsCount, dataLoading: false, dataError: '',
-    isLive: true, markNotificationAsRead, markAllNotificationsAsRead,
+    unreadNotificationsCount, dataLoading, dataError,
+    isLive: true, markNotificationAsRead: handleMarkNotificationAsRead,
+    markAllNotificationsAsRead: handleMarkAllNotificationsAsRead,
     onLogout: handleLogout,
   }
-  // ─── Brand-scoped data for admin/ops ────────────────────────────────────────
+
+  // Brand-scoped data for admin/ops
   const adminBrands = activeUser?.assignedBrands
   const isBrandScoped = activeUser?.role === 'admin'
   const brandScopedVisits = useMemo(() => {
     if (!isBrandScoped) return visitsWithIssues
-    // If no brands assigned → block all data
     if (!adminBrands || adminBrands.length === 0) return []
-    return visitsWithIssues.filter((v) => {
-      const vBrand = v.brand || v.type || ''
-      return adminBrands.includes(vBrand)
-    })
+    return visitsWithIssues.filter(v => adminBrands.includes(v.brand || v.type || ''))
   }, [visitsWithIssues, adminBrands, isBrandScoped])
 
   const brandScopedIssues = useMemo(() => {
-    if (!isBrandScoped) return issuesWithVisitMeta
-    const scopedVisitIds = new Set(brandScopedVisits.map((v) => v.id))
-    return issuesWithVisitMeta.filter((iss) => scopedVisitIds.has(iss.visit_id))
-  }, [issuesWithVisitMeta, brandScopedVisits, isBrandScoped])
+    if (!isBrandScoped) return mappedIssues
+    const scopedIds = new Set(brandScopedVisits.map(v => v.id))
+    return mappedIssues.filter(iss => scopedIds.has(iss.visitId))
+  }, [mappedIssues, brandScopedVisits, isBrandScoped])
 
   const adminScopeProps = {
     ...baseProps, user: activeUser, shoppers, visits: brandScopedVisits, issues: brandScopedIssues,
     addShopper, updateShopper, updateShopperStatus, deleteShopper,
-    addVisit, updateVisit, deleteVisit, completeVisit, awardShopperPoints,
+    addVisit, updateVisit, deleteVisit: deleteVisitAction, completeVisit, awardShopperPoints,
   }
 
   const opsScopeProps = {
     ...baseProps, user: activeUser, shoppers, visits: brandScopedVisits, issues: brandScopedIssues,
-    addVisit, updateVisit, deleteVisit,
+    addVisit, updateVisit, deleteVisit: deleteVisitAction,
   }
 
   const superAdminScopeProps = {
     ...baseProps, user: activeUser, superAdmins, opsAdmins, subAdmins, shoppers,
-    visits: visitsWithIssues, issues: issuesWithVisitMeta,
+    visits: visitsWithIssues, issues: mappedIssues,
     canManageSuperAdmins, canManageOpsAdmins,
     addSuperAdmin, updateSuperAdmin, deleteSuperAdmin,
     addOpsAdmin, updateOpsAdmin, deleteOpsAdmin,
     addSubAdmin, updateSubAdmin, deleteSubAdmin,
     addShopper, updateShopper, updateShopperStatus, deleteShopper,
-    addVisit, updateVisit, deleteVisit, completeVisit, awardShopperPoints,
+    addVisit, updateVisit, deleteVisit: deleteVisitAction, completeVisit, awardShopperPoints,
   }
 
   const shopperScopeProps = {
-    ...baseProps, user: activeUser, shoppers, visits: visitsWithIssues, issues: issuesWithVisitMeta,
+    ...baseProps, user: activeUser, shoppers, visits: visitsWithIssues, issues: mappedIssues,
     completeVisit,
   }
 
   const defaultPath = activeUser ? getRoleHome(activeUser.role) : '/'
+
+  // Show loading while checking session
+  if (!sessionChecked && authUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cb-gray-50">
+        <div className="text-center animate-fade-in">
+          <img src="/branding/chessboard-logo.jpeg" alt="Chessboard" className="mx-auto h-16 w-16 object-contain mb-4 rounded-xl" />
+          <p className="text-sm font-semibold text-cb-gray-600">جاري التحقق من الجلسة...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Suspense

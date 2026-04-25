@@ -1,17 +1,20 @@
 {
-  "name": "demo-dashboard-chessboard",
+  "name": "chessboard-dashboard",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed": "node scripts/seed_superadmin.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
+    "bcryptjs": "^3.0.3",
     "formidable": "^3.5.4",
     "googleapis": "^171.4.0",
+    "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.8.0",
@@ -21,7 +24,6 @@
     "react-is": "^19.2.5",
     "react-router-dom": "^7.14.2",
     "recharts": "^3.8.1",
-    "winston": "^3.19.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

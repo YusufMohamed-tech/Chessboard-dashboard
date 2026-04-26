@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import fs from 'fs'
+import stream from 'stream'
 import { createClient } from '@supabase/supabase-js'
 import formidable from 'formidable'
 
@@ -7,6 +8,34 @@ export const config = {
   api: {
     bodyParser: false,
   },
+}
+
+function getAuthClient() {
+  const scopes = ['https://www.googleapis.com/auth/drive']
+
+  // Support base64-encoded JSON (same as Demo Project)
+  const jsonB64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64
+  if (jsonB64) {
+    try {
+      const decoded = Buffer.from(jsonB64, 'base64').toString('utf8')
+      const parsed = JSON.parse(decoded)
+      if (parsed.client_email && parsed.private_key) {
+        return new google.auth.JWT(parsed.client_email, null, parsed.private_key, scopes)
+      }
+    } catch (e) {
+      console.warn('Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON_B64', e.message)
+    }
+  }
+
+  // Fallback: raw JSON string
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT
+  if (serviceAccountJson) {
+    const credentials = JSON.parse(serviceAccountJson)
+    const privateKey = credentials.private_key.replace(/\\n/g, '\n')
+    return new google.auth.JWT(credentials.client_email, null, privateKey, scopes)
+  }
+
+  throw new Error('Missing Google Drive credentials (GOOGLE_SERVICE_ACCOUNT_JSON_B64 or GOOGLE_SERVICE_ACCOUNT)')
 }
 
 export default async function handler(req, res) {
@@ -50,17 +79,9 @@ export default async function handler(req, res) {
     const mimeType = fileObj.mimetype || fileObj.type || fileObj.mime || 'audio/mpeg'
     const originalFilename = fileObj.originalFilename || fileObj.name || fileObj.filename || 'audio.mp3'
 
-    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT)
+    const buffer = await fs.promises.readFile(filePath)
 
-    const privateKey = credentials.private_key.replace(/\\n/g, '\n')
-    
-    const auth = new google.auth.JWT(
-      credentials.client_email,
-      null,
-      privateKey,
-      ['https://www.googleapis.com/auth/drive']
-    )
-    
+    const auth = getAuthClient()
     if (typeof auth.authorize === 'function') {
       await auth.authorize()
     }
@@ -73,24 +94,25 @@ export default async function handler(req, res) {
 
     const finalFileName = `${visitId ? visitId + '_' : ''}${Date.now()}_${originalFilename}`
     
-    const media = {
-      mimeType,
-      body: fs.createReadStream(filePath),
-    }
+    const bufferStream = new stream.PassThrough()
+    bufferStream.end(buffer)
 
     const driveRes = await drive.files.create({
       requestBody: {
         name: finalFileName,
         parents: [folderId],
       },
-      media: media,
+      media: {
+        mimeType,
+        body: bufferStream,
+      },
+      fields: 'id, webViewLink',
       supportsAllDrives: true,
-      fields: 'id, webViewLink, webContentLink',
     })
 
     const fileId = driveRes.data.id
-    let previewUrl = driveRes.data.webViewLink
 
+    // Make file viewable by anyone with the link
     try {
       await drive.permissions.create({
         fileId,
@@ -99,10 +121,11 @@ export default async function handler(req, res) {
           type: 'anyone'
         }
       })
-      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
     } catch (permErr) {
       console.warn('Failed to make file public', permErr)
     }
+
+    const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
 
     // Update Supabase if we have a visitId
     let inserted = null

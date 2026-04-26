@@ -65,9 +65,16 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, error: 'Invalid GOOGLE_SERVICE_ACCOUNT JSON' })
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
+    const scopes = ['https://www.googleapis.com/auth/drive']
+    const delegatedUser = process.env.GOOGLE_IMPERSONATE_USER
+
+    // Service accounts cannot upload to personal "My Drive" directly.
+    // Use a Shared Drive folder, or enable domain-wide delegation and impersonate a user.
+    const auth = new google.auth.JWT({
+      email: credentials.client_email,
+      key: credentials.private_key,
+      scopes,
+      subject: delegatedUser || undefined,
     })
     
     const drive = google.drive({ version: 'v3', auth })
@@ -89,6 +96,7 @@ export default async function handler(req, res) {
         parents: [folderId],
       },
       media: media,
+      supportsAllDrives: true,
       fields: 'id, webViewLink, webContentLink',
     })
 
@@ -125,6 +133,15 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, fileId, url: previewUrl, supabase: inserted })
   } catch (err) {
     console.error('Upload error', err)
-    return res.status(err.status || 500).json({ success: false, error: err.message || 'Internal error' })
+    const rawMessage = err?.response?.data?.error?.message || err?.message || 'Internal error'
+    const isServiceAccountQuotaError =
+      typeof rawMessage === 'string' &&
+      rawMessage.toLowerCase().includes('service accounts do not have storage quota')
+
+    const error = isServiceAccountQuotaError
+      ? 'Google Drive upload failed: service accounts cannot use personal My Drive storage. Put GOOGLE_DRIVE_FOLDER_ID inside a Shared Drive and share it with the service account, or set GOOGLE_IMPERSONATE_USER with domain-wide delegation.'
+      : rawMessage
+
+    return res.status(err.status || 500).json({ success: false, error })
   }
 }

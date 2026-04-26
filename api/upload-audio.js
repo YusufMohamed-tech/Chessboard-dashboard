@@ -52,10 +52,12 @@ export default async function handler(req, res) {
 
     const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT)
 
+    const privateKey = credentials.private_key.replace(/\\n/g, '\n')
+    
     const auth = new google.auth.JWT(
       credentials.client_email,
       null,
-      credentials.private_key,
+      privateKey,
       ['https://www.googleapis.com/auth/drive']
     )
     

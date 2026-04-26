@@ -50,32 +50,18 @@ export default async function handler(req, res) {
     const mimeType = fileObj.mimetype || fileObj.type || fileObj.mime || 'audio/mpeg'
     const originalFilename = fileObj.originalFilename || fileObj.name || fileObj.filename || 'audio.mp3'
 
-    const buffer = await fs.promises.readFile(filePath)
+    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT)
 
-    // Setup Google Drive Client
-    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT
-    if (!serviceAccountJson) {
-      return res.status(500).json({ success: false, error: 'Missing GOOGLE_SERVICE_ACCOUNT env var' })
+    const auth = new google.auth.JWT(
+      credentials.client_email,
+      null,
+      credentials.private_key,
+      ['https://www.googleapis.com/auth/drive']
+    )
+    
+    if (typeof auth.authorize === 'function') {
+      await auth.authorize()
     }
-
-    let credentials
-    try {
-      credentials = JSON.parse(serviceAccountJson)
-    } catch (e) {
-      return res.status(500).json({ success: false, error: 'Invalid GOOGLE_SERVICE_ACCOUNT JSON' })
-    }
-
-    const scopes = ['https://www.googleapis.com/auth/drive']
-    const delegatedUser = process.env.GOOGLE_IMPERSONATE_USER
-
-    // Service accounts cannot upload to personal "My Drive" directly.
-    // Use a Shared Drive folder, or enable domain-wide delegation and impersonate a user.
-    const auth = new google.auth.JWT({
-      email: credentials.client_email,
-      key: credentials.private_key,
-      scopes,
-      subject: delegatedUser || undefined,
-    })
     
     const drive = google.drive({ version: 'v3', auth })
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
@@ -101,7 +87,20 @@ export default async function handler(req, res) {
     })
 
     const fileId = driveRes.data.id
-    const previewUrl = driveRes.data.webViewLink
+    let previewUrl = driveRes.data.webViewLink
+
+    try {
+      await drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone'
+        }
+      })
+      previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
+    } catch (permErr) {
+      console.warn('Failed to make file public', permErr)
+    }
 
     // Update Supabase if we have a visitId
     let inserted = null
@@ -134,14 +133,6 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('Upload error', err)
     const rawMessage = err?.response?.data?.error?.message || err?.message || 'Internal error'
-    const isServiceAccountQuotaError =
-      typeof rawMessage === 'string' &&
-      rawMessage.toLowerCase().includes('service accounts do not have storage quota')
-
-    const error = isServiceAccountQuotaError
-      ? 'Google Drive upload failed: service accounts cannot use personal My Drive storage. Put GOOGLE_DRIVE_FOLDER_ID inside a Shared Drive and share it with the service account, or set GOOGLE_IMPERSONATE_USER with domain-wide delegation.'
-      : rawMessage
-
-    return res.status(err.status || 500).json({ success: false, error })
+    return res.status(err.status || 500).json({ success: false, error: rawMessage })
   }
 }

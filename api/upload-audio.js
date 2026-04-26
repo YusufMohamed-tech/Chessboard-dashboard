@@ -13,7 +13,22 @@ export const config = {
 function getAuthClient() {
   const scopes = ['https://www.googleapis.com/auth/drive']
 
-  // Support base64-encoded JSON (same as Demo Project)
+  // Prefer OAuth2 (uses real user's storage quota — no service account limitations)
+  const oauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID
+  const oauthClientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
+  const oauthRefreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+
+  if (oauthClientId && oauthClientSecret && oauthRefreshToken) {
+    const oauth2Client = new google.auth.OAuth2(
+      oauthClientId,
+      oauthClientSecret,
+      'https://developers.google.com/oauthplayground'
+    )
+    oauth2Client.setCredentials({ refresh_token: oauthRefreshToken })
+    return oauth2Client
+  }
+
+  // Fallback: base64-encoded service account JSON
   const jsonB64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64
   if (jsonB64) {
     try {
@@ -27,15 +42,7 @@ function getAuthClient() {
     }
   }
 
-  // Fallback: raw JSON string
-  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT
-  if (serviceAccountJson) {
-    const credentials = JSON.parse(serviceAccountJson)
-    const privateKey = credentials.private_key.replace(/\\n/g, '\n')
-    return new google.auth.JWT(credentials.client_email, null, privateKey, scopes)
-  }
-
-  throw new Error('Missing Google Drive credentials (GOOGLE_SERVICE_ACCOUNT_JSON_B64 or GOOGLE_SERVICE_ACCOUNT)')
+  throw new Error('Missing Google Drive credentials. Set GOOGLE_OAUTH_CLIENT_ID/SECRET/REFRESH_TOKEN or GOOGLE_SERVICE_ACCOUNT_JSON_B64')
 }
 
 export default async function handler(req, res) {

@@ -4,10 +4,6 @@
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/auth/:path*", "destination": "/api/auth/:path*" },
-    { "source": "/api/profiles/:path*", "destination": "/api/profiles/:path*" },
-    { "source": "/api/visits/:path*", "destination": "/api/visits/:path*" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
